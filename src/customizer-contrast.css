@@ -158,6 +158,149 @@
   color: #87364a;
 }
 
+.stem-colour-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 11px;
+}
+
+.stem-colour-row {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid #d7c5b0;
+  padding-bottom: 7px;
+}
+
+.stem-colour-label {
+  color: #53383b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.stem-colour-label b {
+  margin-right: 6px;
+  color: #87364a;
+  font-family: 'Playfair Display', serif;
+}
+
+.stem-colour-options {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.flower-swatch {
+  position: relative;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: #442c31;
+  cursor: pointer;
+}
+
+.flower-swatch > span {
+  width: 15px;
+  height: 15px;
+  border: 1px solid #59413a30;
+  border-radius: inherit;
+}
+
+.flower-swatch.active {
+  border-color: #87364a;
+}
+
+.flower-swatch svg {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  filter: drop-shadow(0 1px 1px #fff);
+}
+
+.stem-colour-options small {
+  min-width: 42px;
+  color: #5e4648;
+  font-size: 9px;
+}
+
+.required-label {
+  color: #87364a;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: lowercase;
+}
+
+.extra-note {
+  margin-top: 13px;
+}
+
+.extra-note-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  color: #793649;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+
+.extra-note-heading button {
+  border: 0;
+  background: transparent;
+  color: #70595b;
+  font: inherit;
+  letter-spacing: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.extra-note-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  color: #793649;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.extra-note-button span {
+  color: #654f50;
+  font-weight: 400;
+}
+
+.add-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.cart-placeholder {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  place-items: center;
+  background: #eadbc7;
+  color: #8d5558;
+}
+
+.cart-item > div > small {
+  overflow-wrap: anywhere;
+}
+
 .product-card .product-image img,
 .gallery-photos .gallery-image img {
   transition: transform .45s cubic-bezier(.2, .7, .25, 1);
