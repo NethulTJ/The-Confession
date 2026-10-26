@@ -98,6 +98,61 @@
   font-weight: 500;
 }
 
+.wrap-select-control {
+  position: relative;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  margin-block: 11px 18px;
+  border: 1px solid #c7b39b;
+  background: #fff9f0;
+  padding: 0 12px;
+  color: #53383b;
+}
+
+.wrap-select-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 1px solid #59413a55;
+  border-radius: 50%;
+}
+
+.wrap-select-caption {
+  color: #70595b;
+  font-size: 10px;
+}
+
+.wrap-select-control select {
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0 24px 0 4px;
+  color: #432a2f;
+  font: inherit;
+  font-size: 11px;
+  text-align: right;
+  cursor: pointer;
+}
+
+.wrap-select-control:focus-within {
+  border-color: #87364a;
+  box-shadow: 0 0 0 2px #87364a20;
+}
+
+.wrap-select-control > svg {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: #793649;
+}
+
 .message-label {
   margin-bottom: 10px;
 }
@@ -165,11 +220,11 @@
 }
 
 .stem-colour-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
   min-height: 32px;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   border-bottom: 1px solid #d7c5b0;
   padding-bottom: 7px;
 }
@@ -189,16 +244,19 @@
 .stem-colour-options {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: flex-start;
+  gap: 5px;
+  min-width: 0;
 }
 
 .flower-swatch {
   position: relative;
-  display: grid;
+  display: inline-grid;
   width: 23px;
   height: 23px;
+  flex: 0 0 23px;
   place-items: center;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 50%;
   background: transparent;
   color: #442c31;
@@ -213,20 +271,41 @@
 }
 
 .flower-swatch.active {
-  border-color: #87364a;
+  box-shadow: 0 0 0 1px #87364a;
 }
 
 .flower-swatch svg {
   position: absolute;
+  inset: 0;
+  display: block;
+  margin: auto;
   width: 10px;
   height: 10px;
   filter: drop-shadow(0 1px 1px #fff);
+  pointer-events: none;
 }
 
 .stem-colour-options small {
-  min-width: 42px;
+  min-width: 48px;
+  margin-left: 2px;
   color: #5e4648;
   font-size: 9px;
+  white-space: nowrap;
+}
+
+@media (max-width: 390px) {
+  .stem-colour-row {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .stem-colour-options {
+    gap: 3px;
+  }
+
+  .stem-colour-options small {
+    min-width: 42px;
+  }
 }
 
 .required-label {
