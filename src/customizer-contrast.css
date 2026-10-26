@@ -1,0 +1,267 @@
+.customizer {
+  background: #eadbc7;
+  border-color: #c7aa8d;
+  box-shadow: 0 7px 22px #57342b12;
+}
+
+.custom-top {
+  padding-block: 19px;
+}
+
+.custom-top .eyebrow {
+  color: #f6ddc9;
+  font-size: 9px;
+}
+
+.custom-flower {
+  font-size: 19px;
+}
+
+.custom-content {
+  padding: 22px;
+}
+
+.step-label {
+  color: #53383b;
+  font-size: 9px;
+}
+
+.step-label > span:first-child {
+  color: #87364a;
+  font-size: 13px;
+}
+
+.stem-choices {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.stem-choices button {
+  min-height: 48px;
+  padding-inline: 10px;
+  border-color: #c7b39b;
+  background: #fff9f0;
+  color: #432a2f;
+}
+
+.stem-choices button.active {
+  border: 1.5px solid #87364a;
+  background: #fffdf8;
+  box-shadow: inset 0 0 0 1px #87364a24;
+}
+
+.stem-choices button > span {
+  font-size: 20px;
+}
+
+.stem-choices button > span small {
+  color: #70595b;
+  font-size: 9px;
+}
+
+.stem-choices button > b {
+  color: #48282f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.stem-choices button > svg {
+  right: -5px;
+  top: -5px;
+  width: 16px;
+  height: 16px;
+}
+
+.wrap-label {
+  margin-top: 22px;
+}
+
+.wrap-choices {
+  gap: 9px;
+  margin-block: 11px 19px;
+}
+
+.wrap-choices button {
+  width: 27px;
+  height: 27px;
+}
+
+.wrap-choices button > span {
+  width: 18px;
+  height: 18px;
+  box-shadow: inset 0 0 0 1px #634c382e;
+}
+
+.wrap-choices small {
+  color: #5e4648;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.message-label {
+  margin-bottom: 10px;
+}
+
+.message-label i {
+  color: #78605c;
+}
+
+.customizer textarea {
+  height: 69px;
+  border-color: #c7b39b;
+  background: #fffaf2;
+  padding: 11px;
+  color: #422c32;
+  font-size: 12px;
+}
+
+.customizer textarea::placeholder {
+  color: #765c60;
+  opacity: 1;
+}
+
+.message-bottom {
+  margin-top: 6px;
+  color: #70595b;
+  font-size: 9px;
+}
+
+.add-row {
+  margin-top: 18px;
+  border-color: #c7b39b;
+  padding-top: 15px;
+}
+
+.add-row > div small {
+  color: #62484b;
+  font-size: 9px;
+}
+
+.add-row > div strong {
+  color: #3f262b;
+  font-size: 23px;
+}
+
+.add-button {
+  height: 43px;
+}
+
+.custom-foot {
+  margin-top: 15px;
+  border-color: #c7b39b;
+  padding-top: 12px;
+  color: #654f50;
+  font-size: 9px;
+}
+
+.custom-foot svg {
+  color: #87364a;
+}
+
+.product-list .product-card:nth-child(3) .product-image img {
+  transform: scale(1);
+  transform-origin: left 52%;
+}
+
+.product-list .product-card:nth-child(3):hover .product-image img,
+.product-list .product-card:nth-child(3):focus-visible .product-image img {
+  transform: scale(3);
+}
+
+.product-card .product-image img,
+.gallery-photos .gallery-image img {
+  transition: transform .45s cubic-bezier(.2, .7, .25, 1);
+}
+
+.product-card:hover .product-image img,
+.product-card:focus-visible .product-image img {
+  transform: scale(1.12);
+}
+
+.flower-gallery {
+  margin-top: 26px;
+  padding-top: 15px;
+  border-top: 1px solid #ded2c2;
+}
+
+.gallery-caption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+  color: #793649;
+}
+
+.gallery-caption > span {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .15em;
+}
+
+.gallery-caption small {
+  color: #796365;
+  font-family: 'Playfair Display', serif;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.gallery-photos {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.gallery-photos figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.gallery-photos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1.08;
+  object-fit: cover;
+  background: #eadfce;
+}
+
+.gallery-image {
+  display: block;
+  overflow: hidden;
+}
+
+.gallery-photos figure:hover .gallery-image img {
+  transform: scale(1.16);
+}
+
+.gallery-photos figcaption {
+  margin-top: 5px;
+  color: #70595b;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+@media (max-width: 390px) {
+  .custom-content {
+    padding: 14px;
+  }
+
+  .stem-choices button > b {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .gallery-photos {
+    display: flex;
+    gap: 9px;
+    overflow-x: auto;
+    padding-bottom: 7px;
+    scrollbar-color: #c8a98d transparent;
+    scrollbar-width: thin;
+  }
+
+  .gallery-photos figure {
+    flex: 0 0 82px;
+  }
+}
