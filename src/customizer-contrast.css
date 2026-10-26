@@ -221,12 +221,12 @@
 
 .stem-colour-row {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 32px;
-  align-items: center;
-  gap: 10px;
+  align-items: start;
+  gap: 4px;
   border-bottom: 1px solid #d7c5b0;
-  padding-bottom: 7px;
+  padding-block: 3px 8px;
 }
 
 .stem-colour-label {
@@ -245,7 +245,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -264,8 +264,11 @@
 }
 
 .flower-swatch > span {
+  display: block;
   width: 15px;
   height: 15px;
+  justify-self: center;
+  align-self: center;
   border: 1px solid #59413a30;
   border-radius: inherit;
 }
@@ -274,38 +277,12 @@
   box-shadow: 0 0 0 1px #87364a;
 }
 
-.flower-swatch svg {
-  position: absolute;
-  inset: 0;
-  display: block;
-  margin: auto;
-  width: 10px;
-  height: 10px;
-  filter: drop-shadow(0 1px 1px #fff);
-  pointer-events: none;
-}
-
 .stem-colour-options small {
-  min-width: 48px;
+  min-width: 0;
   margin-left: 2px;
   color: #5e4648;
   font-size: 9px;
   white-space: nowrap;
-}
-
-@media (max-width: 390px) {
-  .stem-colour-row {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .stem-colour-options {
-    gap: 3px;
-  }
-
-  .stem-colour-options small {
-    min-width: 42px;
-  }
 }
 
 .required-label {
