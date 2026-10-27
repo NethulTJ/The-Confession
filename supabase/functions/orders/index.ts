@@ -58,7 +58,7 @@ async function sendOrderConfirmation(to: string, orderNumber: string, summary: s
       line = await readLine();
     } while (/^\d{3}-/.test(line));
     const code = Number(line.slice(0, 3));
-    if (!accepted.includes(code)) throw new Error(`Gmail SMTP returned ${code}`);
+    if (!accepted.includes(code)) throw new Error(`Gmail SMTP ${code}: ${line.slice(4, 180)}`);
   };
 
   const command = async (value: string, accepted: number[]) => {
@@ -130,9 +130,12 @@ Deno.serve(async (req) => {
           await sendOrderConfirmation(c.email, order.order_number, summary, Number(order.subtotal));
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
           order.confirmation_email_status = "sent";
-        } catch {
-          await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "failed", confirmation_email_error: "Provider send failed" }) });
+        } catch (error) {
+          const detail = error instanceof Error ? error.message.slice(0, 200) : "Unknown Gmail SMTP error";
+          console.error("Order confirmation email failed", detail);
+          await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "failed", confirmation_email_error: detail }) });
           order.confirmation_email_status = "failed";
+          order.confirmation_email_error = detail;
         }
       } else if (!emailConfigured) {
         order.confirmation_email_status = "not_configured";
@@ -185,8 +188,11 @@ Deno.serve(async (req) => {
       const summary = items.map((x: any) => `${x.stem_quantity} ${x.stem_quantity === 1 ? "stem" : "stems"} of ${x.flower_name}`).join(", ");
       try {
         await sendOrderConfirmation(order.customer_email, order.order_number, summary, Number(order.subtotal));
-      } catch {
-        return reply({ error: "Email retry failed. The saved order is unchanged." }, 502);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message.slice(0, 200) : "Unknown Gmail SMTP error";
+        console.error("Order confirmation retry failed", detail);
+        await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "failed", confirmation_email_error: detail }) });
+        return reply({ error: `Email retry failed: ${detail}` }, 502);
       }
       await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
       return reply({ ok: true });
