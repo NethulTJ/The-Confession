@@ -4,6 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
+const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const senderDisplayName = "The Confession by the Leo Club of IIT";
@@ -297,8 +298,7 @@ Deno.serve(async (req) => {
         messages: Array.isArray(item.messages) ? item.messages : [],
         extraNoteCount: Number(item.extraNoteCount ?? 0),
       }));
-      const allowedColors: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
-      if (items.some((item: any) => !["chrysanthemum", "lilies", "rose"].includes(item.flower_id) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > 4 || item.stemColors.length !== item.stems || item.stemColors.some((x: unknown) => !allowedColors[item.flower_id].includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600))) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
+      if (items.some((item: any) => !["chrysanthemum", "lilies", "rose"].includes(item.flower_id) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > 4 || item.stemColors.length !== item.stems || item.stemColors.some((x: unknown) => !flowerColorOptions[item.flower_id].includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600))) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
       const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, terms_accepted: true, terms_accepted_at: new Date().toISOString(), customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
@@ -359,13 +359,18 @@ Deno.serve(async (req) => {
       const response = await db(`orders?select=id,created_at,status&created_at=gte.${encodeURIComponent(from.toISOString())}&created_at=lte.${encodeURIComponent(to.toISOString())}&status=neq.cancelled`);
       const orders = await response.json(); if (!response.ok) return reply({ error: "Demand could not be loaded." }, 502);
       const ids = orders.map((o: any) => o.id);
-      if (!ids.length) return reply({ demand: { stems: { chrysanthemum: 0, lilies: 0, rose: 0 }, notes: { total: 0, included: 0, extra: 0 }, included_statuses: statuses.filter(s => s !== "cancelled") } });
-      const [itemsRes, notesRes] = await Promise.all([db(`order_items?select=flower_id,stem_quantity,order_id&order_id=in.(${ids.join(",")})`), db(`order_notes?select=note_type,order_id&order_id=in.(${ids.join(",")})`)]);
+      const colors = Object.fromEntries(Object.entries(flowerColorOptions).map(([flowerId, options]) => [flowerId, Object.fromEntries(options.map(color => [color, 0]))]));
+      if (!ids.length) return reply({ demand: { stems: { chrysanthemum: 0, lilies: 0, rose: 0 }, colors, notes: { total: 0, included: 0, extra: 0 }, included_statuses: statuses.filter(s => s !== "cancelled") } });
+      const [itemsRes, notesRes] = await Promise.all([db(`order_items?select=flower_id,stem_quantity,selected_colors,order_id&order_id=in.(${ids.join(",")})`), db(`order_notes?select=note_type,order_id&order_id=in.(${ids.join(",")})`)]);
       const items = await itemsRes.json(); const notes = await notesRes.json();
       const stems = { chrysanthemum: 0, lilies: 0, rose: 0 };
-      for (const item of items) stems[item.flower_id as keyof typeof stems] += item.stem_quantity;
+      for (const item of items) {
+        const flowerId = item.flower_id as keyof typeof stems;
+        stems[flowerId] += item.stem_quantity;
+        for (const color of item.selected_colors || []) if (colors[flowerId]?.[color] !== undefined) colors[flowerId][color] += 1;
+      }
       const included = notes.filter((n: any) => n.note_type === "included").length; const extra = notes.filter((n: any) => n.note_type === "extra").length;
-      return reply({ demand: { stems, notes: { total: included + extra, included, extra }, included_statuses: statuses.filter(s => s !== "cancelled") } });
+      return reply({ demand: { stems, colors, notes: { total: included + extra, included, extra }, included_statuses: statuses.filter(s => s !== "cancelled") } });
     }
     if (body.action === "retry_email") {
       const r = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=*`); const rows = await r.json(); const order = rows[0];
