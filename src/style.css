@@ -21,3 +21,5 @@
 .terms-back{border:1px solid #ddcec0;background:#fffdfa;color:#704d52}
 .terms-actions .button:disabled{opacity:.48;cursor:not-allowed;transform:none}
 @media(max-width:480px){.terms-shade{padding:12px}.terms-dialog{padding:24px 20px}.terms-actions{flex-direction:column-reverse}.terms-actions .button{width:100%}}
+
+.nav a{border:0;background:none;font-size:9px;font-weight:700;letter-spacing:.13em;color:#60474a}.nav a.active{color:#8d3546;text-decoration:underline;text-decoration-color:#c9988f;text-underline-offset:8px}
