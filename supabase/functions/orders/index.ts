@@ -45,6 +45,65 @@ const encodeMime = (value: string) => {
   return base64.match(/.{1,76}/g)?.join("\r\n") ?? "";
 };
 
+const asciiPdfText = (value: unknown) => String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "?");
+const escapePdfText = (value: string) => asciiPdfText(value).replace(/([\\()])/g, "\\$1");
+const base64Bytes = (bytes: Uint8Array) => btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(""));
+
+function createInvoicePdf(orderNumber: string, customerName: string, recipientName: string, items: EmailOrderItem[], subtotal: number, createdAt = new Date()) {
+  const headerLines = [
+    { text: "THE CONFESSION", size: 22, color: "0.42 0.15 0.24" },
+    { text: "ORDER INVOICE", size: 11, color: "0.55 0.38 0.39" },
+    { text: `Order number: ${orderNumber}`, size: 12, color: "0.22 0.16 0.18" },
+    { text: `Date: ${createdAt.toLocaleDateString("en-GB", { timeZone: "Asia/Colombo" })}`, size: 10, color: "0.38 0.31 0.31" },
+    { text: `Ordered by: ${customerName}`, size: 10, color: "0.38 0.31 0.31" },
+    { text: `Prepared for: ${recipientName}`, size: 10, color: "0.38 0.31 0.31" },
+    { text: "ITEMS", size: 10, color: "0.55 0.38 0.39" },
+  ];
+  const pages = [];
+  for (let start = 0; start < items.length; start += 10) {
+    const pageItems = items.slice(start, start + 10);
+    const lines = [
+      ...headerLines,
+      ...pageItems.flatMap((item, index) => [
+      { text: `${start + index + 1}. ${item.flower_name} - ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}`, size: 11, color: "0.22 0.16 0.18" },
+      { text: `   Colors: ${item.selected_colors.join(", ") || "As selected"} | Wrap: ${item.wrap_name}`, size: 9, color: "0.38 0.31 0.31" },
+      { text: `   Item total: ${formatLkr(item.item_subtotal)}`, size: 9, color: "0.38 0.31 0.31" },
+      ]),
+    ];
+    if (start + 10 >= items.length) lines.push(
+      { text: `ORDER TOTAL: ${formatLkr(subtotal)}`, size: 14, color: "0.42 0.15 0.24" },
+      { text: "Payment is not collected online. Delivery will be arranged personally.", size: 9, color: "0.48 0.41 0.41" },
+    );
+    let y = 795;
+    const commands = ["0.97 0.95 0.92 rg", "0 0 595 842 re f", "0.85 0.78 0.71 RG", "42 42 511 758 re S"];
+    for (const [index, line] of lines.entries()) {
+      if (index === 1) y -= 27;
+      else if (index === 6 || line.text.startsWith("ORDER TOTAL")) y -= 25;
+      else y -= line.size >= 11 ? 23 : 18;
+      commands.push(`${line.color} rg BT /${line.size >= 11 ? "F2" : "F1"} ${line.size} Tf 58 ${y} Td (${escapePdfText(line.text)}) Tj ET`);
+    }
+    pages.push(commands.join("\n"));
+  }
+  const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"];
+  const pageIds = pages.map((_, index) => 5 + index * 2);
+  objects[1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(" ")}] /Count ${pages.length} >>`;
+  for (const [index, stream] of pages.entries()) {
+    const pageId = 5 + index * 2;
+    const contentId = pageId + 1;
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`);
+    objects.push(`<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`);
+  }
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const [index, object] of objects.entries()) {
+    offsets.push(new TextEncoder().encode(pdf).length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  }
+  const xref = new TextEncoder().encode(pdf).length;
+  pdf += `xref\n0 ${offsets.length}\n0000000000 65535 f \n${offsets.slice(1).map(offset => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return new TextEncoder().encode(pdf);
+}
+
 async function getOrderEmailItems(orderId: string): Promise<EmailOrderItem[]> {
   const [itemsResponse, notesResponse] = await Promise.all([
     db(`order_items?select=id,flower_name,stem_quantity,selected_colors,wrap_name,item_subtotal&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
@@ -55,7 +114,7 @@ async function getOrderEmailItems(orderId: string): Promise<EmailOrderItem[]> {
   return items.map((item: any) => ({ ...item, notes: notes.filter((note: any) => note.order_item_id === item.id) }));
 }
 
-async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number) {
+async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number, invoicePdf: Uint8Array) {
   const username = Deno.env.get("GMAIL_USER");
   const appPassword = Deno.env.get("GMAIL_APP_PASSWORD")?.replace(/\s/g, "");
   const sender = Deno.env.get("GMAIL_SENDER_EMAIL") ?? username;
@@ -66,7 +125,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
   const safeCustomer = customerName.trim() || "there";
   const textItems = items.map((item, index) => {
     const notes = item.notes.map(note => `${note.note_type === "extra" ? `Extra note (${formatLkr(note.price)})` : "Included note"}: “${note.note_text}”`).join("\n    ");
-    return `${index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
+    return `${start + index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
   }).join("\n\n");
   const message = [
     `${senderDisplayName} · Order confirmation`,
@@ -142,18 +201,28 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
       `To: <${to}>`,
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
       "",
       `--${boundary}`,
+      'Content-Type: multipart/alternative; boundary="alt_' + boundary + '"',
+      "",
+      `--alt_${boundary}`,
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
       encodedText,
-      `--${boundary}`,
+      `--alt_${boundary}`,
       "Content-Type: text/html; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
       encodedHtml,
+      `--alt_${boundary}--`,
+      `--${boundary}`,
+      'Content-Type: application/pdf; name="' + orderNumber + '-invoice.pdf"',
+      "Content-Transfer-Encoding: base64",
+      'Content-Disposition: attachment; filename="' + orderNumber + '-invoice.pdf"',
+      "",
+      base64Bytes(invoicePdf).match(/.{1,76}/g)?.join("\r\n") ?? "",
       `--${boundary}--`,
       ".",
     ].join("\r\n") + "\r\n";
@@ -194,10 +263,17 @@ Deno.serve(async (req) => {
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
       // Email is attempted only after the atomic order transaction returns successfully.
       const emailConfigured = Boolean(Deno.env.get("GMAIL_USER") && Deno.env.get("GMAIL_APP_PASSWORD"));
-      if (!order.existing && emailConfigured) {
+      let emailItems: EmailOrderItem[] = [];
+      let invoicePdf = new Uint8Array();
+      try {
+        emailItems = await getOrderEmailItems(order.id);
+        invoicePdf = createInvoicePdf(order.order_number, c.name, recipientName, emailItems, Number(order.subtotal));
+      } catch (error) {
+        console.error("Order invoice generation failed", error instanceof Error ? error.message : "Unknown error");
+      }
+      if (!order.existing && emailConfigured && invoicePdf.length) {
         try {
-          const emailItems = await getOrderEmailItems(order.id);
-          await sendOrderConfirmation(c.email, c.name, recipientName, order.order_number, emailItems, Number(order.subtotal));
+          await sendOrderConfirmation(c.email, c.name, recipientName, order.order_number, emailItems, Number(order.subtotal), invoicePdf);
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
           order.confirmation_email_status = "sent";
         } catch (error) {
@@ -210,7 +286,7 @@ Deno.serve(async (req) => {
       } else if (!emailConfigured) {
         order.confirmation_email_status = "not_configured";
       }
-      return reply({ order }, 201);
+      return reply({ order: { ...order, invoice_pdf_base64: invoicePdf.length ? base64Bytes(invoicePdf) : null } }, 201);
     }
 
     const user = await adminUser(req);
@@ -256,7 +332,8 @@ Deno.serve(async (req) => {
       if (!Deno.env.get("GMAIL_USER") || !Deno.env.get("GMAIL_APP_PASSWORD")) return reply({ error: "Confirmation email is not configured." }, 503);
       try {
         const emailItems = await getOrderEmailItems(order.id);
-        await sendOrderConfirmation(order.customer_email, order.customer_name, order.recipient_name, order.order_number, emailItems, Number(order.subtotal));
+        const invoicePdf = createInvoicePdf(order.order_number, order.customer_name, order.recipient_name, emailItems, Number(order.subtotal), new Date(order.created_at));
+        await sendOrderConfirmation(order.customer_email, order.customer_name, order.recipient_name, order.order_number, emailItems, Number(order.subtotal), invoicePdf);
       } catch (error) {
         const detail = error instanceof Error ? error.message.slice(0, 200) : "Unknown Gmail SMTP error";
         console.error("Order confirmation retry failed", detail);
