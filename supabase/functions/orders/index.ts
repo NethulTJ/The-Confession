@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     if (body.action === "create") {
+      if (body.terms_accepted !== true) return reply({ error: "Please review and agree to the delivery terms before placing your order." }, 400);
       const c = body.customer ?? {};
       const recipientName = c.recipient_name ?? c.name;
       const recipientPhone = c.recipient_phone ?? c.phone;
@@ -188,7 +189,7 @@ Deno.serve(async (req) => {
       }));
       const allowedColors: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
       if (items.some((item: any) => !["chrysanthemum", "lilies", "rose"].includes(item.flower_id) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > 4 || item.stemColors.length !== item.stems || item.stemColors.some((x: unknown) => !allowedColors[item.flower_id].includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600))) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
-      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
+      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, terms_accepted: true, terms_accepted_at: new Date().toISOString(), customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
       // Email is attempted only after the atomic order transaction returns successfully.

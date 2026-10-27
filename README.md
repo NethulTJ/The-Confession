@@ -38,6 +38,7 @@ Use `npm install` and `npm run dev`, then visit `/` for the shop or `/admin` for
 
 - Order numbers use the Colombo calendar date and a transaction-safe daily counter. The private UUID remains the internal order ID.
 - Flower name, selected stem colors, stem quantity, wrap, price snapshot, order notes, purchaser contact details, and the intended recipient’s name and phone are saved with each order. Checkout does not collect street addresses because delivery is arranged for the scheduled day at the fixed delivery point. Catalog prices are recomputed by the database transaction so browser-submitted prices cannot alter totals.
+- Before placing an order, the purchaser must agree that the recipient should be present and answer the supplied phone number; if they do not answer, the purchaser will be called. If neither person can be reached, delivery cannot be completed and no refund is available. Acceptance is timestamped with the order.
 - Statuses are `pending`, `confirmed`, `preparing`, `ready`, `fulfilled`, and `cancelled`. Purchasing demand counts every status except `cancelled`; the dashboard displays this rule.
 - Demand totals are customer-requested stems and included/paid-extra note cards. They are not stock-on-hand and do not represent received inventory.
 - Customer confirmation emails use Gmail SMTP and display as `The Confession by the Leo Club of IIT`. Set `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and optionally `GMAIL_SENDER_EMAIL` as Edge Function secrets; never commit an app password or expose it in a `VITE_` variable.
