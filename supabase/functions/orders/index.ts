@@ -6,6 +6,7 @@ const corsHeaders = {
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const senderDisplayName = "The Confession by the Leo Club of IIT";
 
 async function adminUser(req: Request) {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -61,14 +62,14 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
   if (!username || !appPassword || !sender) throw new Error("Gmail is not configured");
   if (!emailPattern.test(username) || !emailPattern.test(sender) || !emailPattern.test(to)) throw new Error("Invalid email configuration");
 
-  const subject = `Your Secret order ${orderNumber}`;
+  const subject = `Your order from The Confession · ${orderNumber}`;
   const safeCustomer = customerName.trim() || "there";
   const textItems = items.map((item, index) => {
     const notes = item.notes.map(note => `${note.note_type === "extra" ? `Extra note (${formatLkr(note.price)})` : "Included note"}: “${note.note_text}”`).join("\n    ");
     return `${index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
   }).join("\n\n");
   const message = [
-    "SECRET FLOWER STUDIO · ORDER CONFIRMATION",
+    `${senderDisplayName} · Order confirmation`,
     "",
     `Thank you, ${safeCustomer}. Your order is saved and being prepared with care.`,
     `Order number: ${orderNumber}`,
@@ -82,7 +83,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
     "Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.",
     "",
     "With care,",
-    "Secret Flower Studio",
+    senderDisplayName,
   ].join("\n");
   const itemHtml = items.map((item, index) => {
     const notesHtml = item.notes.length
@@ -90,7 +91,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
       : "";
     return `<tr><td style="padding:18px 0;border-bottom:1px solid #eee7df"><div style="font-family:Georgia,serif;font-size:18px;color:#462f34">${index + 1}. ${escapeHtml(item.flower_name)} <span style="font-family:Arial,sans-serif;font-size:13px;color:#806d6c">· ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}</span></div><div style="margin-top:8px;color:#756567;font-size:13px;line-height:1.7">Colors: ${escapeHtml(item.selected_colors.join(", ") || "As selected")}<br>Wrap: ${escapeHtml(item.wrap_name)}</div>${notesHtml}<div style="margin-top:12px;text-align:right;font-size:13px;color:#593e43">Item total <strong>${formatLkr(item.item_subtotal)}</strong></div></td></tr>`;
   }).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:3px">SECRET</div><div style="margin-top:5px;font-size:9px;letter-spacing:3px;color:#e7d1c3">FLOWER STUDIO</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER CONFIRMATION</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">Your order is saved and being prepared with care.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">Secret Flower Studio</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:1px">The Confession</div><div style="margin-top:7px;font-size:10px;letter-spacing:1px;color:#e7d1c3">by the Leo Club of IIT</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER CONFIRMATION</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">Your order is saved and being prepared with care.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">${escapeHtml(senderDisplayName)}</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
   const boundary = `secret_order_${crypto.randomUUID().replaceAll("-", "")}`;
   const encodedText = encodeMime(message);
   const encodedHtml = encodeMime(html);
@@ -137,7 +138,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
     await command(`RCPT TO:<${to}>`, [250, 251]);
     await command("DATA", [354]);
     const data = [
-      `From: Secret Flower Studio <${sender}>`,
+      `From: ${senderDisplayName} <${sender}>`,
       `To: <${to}>`,
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
