@@ -25,6 +25,79 @@ async function db(path: string, init: RequestInit = {}) {
   });
 }
 
+async function sendOrderConfirmation(to: string, orderNumber: string, summary: string, subtotal: number) {
+  const username = Deno.env.get("GMAIL_USER");
+  const appPassword = Deno.env.get("GMAIL_APP_PASSWORD")?.replace(/\s/g, "");
+  const sender = Deno.env.get("GMAIL_SENDER_EMAIL") ?? username;
+  if (!username || !appPassword || !sender) throw new Error("Gmail is not configured");
+  if (!emailPattern.test(username) || !emailPattern.test(sender) || !emailPattern.test(to)) throw new Error("Invalid email configuration");
+
+  const subject = `Your Secret order ${orderNumber}`;
+  const message = `Thank you for choosing Secret Flower Studio.\n\nOrder ${orderNumber}\n${summary}\nSubtotal: LKR ${subtotal.toLocaleString("en-LK")}\n\nWe’ll be in touch to arrange delivery.`;
+  const encodedBody = btoa(Array.from(new TextEncoder().encode(message), byte => String.fromCharCode(byte)).join(""));
+  const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
+  let pending = "";
+  const readBuffer = new Uint8Array(1024);
+  const decoder = new TextDecoder();
+
+  const readLine = async () => {
+    while (!pending.includes("\n")) {
+      const count = await conn.read(readBuffer);
+      if (count === null) throw new Error("Gmail closed the SMTP connection");
+      pending += decoder.decode(readBuffer.subarray(0, count), { stream: true });
+    }
+    const index = pending.indexOf("\n");
+    const line = pending.slice(0, index).replace(/\r$/, "");
+    pending = pending.slice(index + 1);
+    return line;
+  };
+
+  const expect = async (accepted: number[]) => {
+    let line: string;
+    do {
+      line = await readLine();
+    } while (/^\d{3}-/.test(line));
+    const code = Number(line.slice(0, 3));
+    if (!accepted.includes(code)) throw new Error(`Gmail SMTP returned ${code}`);
+  };
+
+  const command = async (value: string, accepted: number[]) => {
+    const bytes = new TextEncoder().encode(`${value}\r\n`);
+    let offset = 0;
+    while (offset < bytes.length) offset += await conn.write(bytes.subarray(offset));
+    await expect(accepted);
+  };
+
+  try {
+    await expect([220]);
+    await command("EHLO localhost", [250]);
+    await command("AUTH LOGIN", [334]);
+    await command(btoa(username), [334]);
+    await command(btoa(appPassword), [235]);
+    await command(`MAIL FROM:<${sender}>`, [250]);
+    await command(`RCPT TO:<${to}>`, [250, 251]);
+    await command("DATA", [354]);
+    const data = [
+      `From: Secret Flower Studio <${sender}>`,
+      `To: <${to}>`,
+      `Subject: ${subject}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      encodedBody,
+      ".",
+    ].join("\r\n") + "\r\n";
+    const bytes = new TextEncoder().encode(data);
+    let offset = 0;
+    while (offset < bytes.length) offset += await conn.write(bytes.subarray(offset));
+    await expect([250]);
+    await command("QUIT", [221]);
+  } finally {
+    conn.close();
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ error: "Method not allowed" }, 405);
@@ -50,20 +123,18 @@ Deno.serve(async (req) => {
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
       // Email is attempted only after the atomic order transaction returns successfully.
-      const emailKey = Deno.env.get("RESEND_API_KEY");
-      const from = Deno.env.get("ORDER_EMAIL_FROM");
-      if (!order.existing && emailKey && from) {
+      const emailConfigured = Boolean(Deno.env.get("GMAIL_USER") && Deno.env.get("GMAIL_APP_PASSWORD"));
+      if (!order.existing && emailConfigured) {
         const summary = items.map((item: any) => `${item.stems} ${item.stems === 1 ? "stem" : "stems"} of ${item.flower_id}`).join(", ");
         try {
-          const sent = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${emailKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [c.email], subject: `Your Secret order ${order.order_number}`, text: `Thank you for choosing Secret Flower Studio.\n\nOrder ${order.order_number}\n${summary}\nSubtotal: LKR ${order.subtotal.toLocaleString("en-LK")}\n\nWe’ll be in touch to arrange delivery.` }) });
-          if (!sent.ok) throw new Error(`Email provider returned ${sent.status}`);
+          await sendOrderConfirmation(c.email, order.order_number, summary, Number(order.subtotal));
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
           order.confirmation_email_status = "sent";
         } catch {
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "failed", confirmation_email_error: "Provider send failed" }) });
           order.confirmation_email_status = "failed";
         }
-      } else if (!emailKey || !from) {
+      } else if (!emailConfigured) {
         order.confirmation_email_status = "not_configured";
       }
       return reply({ order }, 201);
@@ -109,12 +180,14 @@ Deno.serve(async (req) => {
     if (body.action === "retry_email") {
       const r = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=*`); const rows = await r.json(); const order = rows[0];
       if (!order) return reply({ error: "Order not found." }, 404);
-      const emailKey = Deno.env.get("RESEND_API_KEY"); const from = Deno.env.get("ORDER_EMAIL_FROM");
-      if (!emailKey || !from) return reply({ error: "Confirmation email is not configured." }, 503);
+      if (!Deno.env.get("GMAIL_USER") || !Deno.env.get("GMAIL_APP_PASSWORD")) return reply({ error: "Confirmation email is not configured." }, 503);
       const ir = await db(`order_items?select=flower_name,stem_quantity&order_id=eq.${order.id}`); const items = await ir.json();
       const summary = items.map((x: any) => `${x.stem_quantity} ${x.stem_quantity === 1 ? "stem" : "stems"} of ${x.flower_name}`).join(", ");
-      const sent = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${emailKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [order.customer_email], subject: `Your Secret order ${order.order_number}`, text: `Thank you for choosing Secret Flower Studio.\n\nOrder ${order.order_number}\n${summary}\nSubtotal: LKR ${Number(order.subtotal).toLocaleString("en-LK")}\n\nWe’ll be in touch to arrange delivery.` }) });
-      if (!sent.ok) return reply({ error: "Email retry failed. The saved order is unchanged." }, 502);
+      try {
+        await sendOrderConfirmation(order.customer_email, order.order_number, summary, Number(order.subtotal));
+      } catch {
+        return reply({ error: "Email retry failed. The saved order is unchanged." }, 502);
+      }
       await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
       return reply({ ok: true });
     }

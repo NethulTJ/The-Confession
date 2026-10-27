@@ -20,10 +20,11 @@ Deploy `supabase/functions/orders` as the `orders` Edge Function. `supabase/conf
 | `SUPABASE_ANON_KEY` | Yes | Used server-side to validate the admin access token |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Privileged database access, Edge Function only |
 | `SITE_ORIGIN` | Recommended | Storefront origin for CORS, e.g. `https://your-store.example` |
-| `RESEND_API_KEY` | Later | Resend API credential for customer confirmation emails |
-| `ORDER_EMAIL_FROM` | Later | Verified sender, e.g. `Secret Flower Studio <orders@your-domain.example>` |
+| `GMAIL_USER` | Yes for email | Google account email used for SMTP authentication |
+| `GMAIL_APP_PASSWORD` | Yes for email | Google App Password; store it only as a Supabase Edge Function secret |
+| `GMAIL_SENDER_EMAIL` | Optional | Sender address; defaults to `GMAIL_USER` |
 
-Until the Resend key and verified sender are configured, saved orders succeed and the customer sees the saved order number; email delivery is reported as not configured. If a configured send fails, the order stays saved and an authorized admin can retry from its detail panel.
+Until the Gmail secrets are configured, saved orders succeed and the customer sees the saved order number; email delivery is reported as not configured. If a configured send fails, the order stays saved and an authorized admin can retry from its detail panel. The function connects to Gmail SMTP over TLS on port 465.
 
 ### 4. Grant admin access
 
@@ -39,4 +40,4 @@ Use `npm install` and `npm run dev`, then visit `/` for the shop or `/admin` for
 - Flower name, selected stem colors, stem quantity, wrap, price snapshot, order notes, purchaser contact details, and the intended recipient’s name and phone are saved with each order. Checkout does not collect street addresses because delivery is arranged for the scheduled day at the fixed delivery point. Catalog prices are recomputed by the database transaction so browser-submitted prices cannot alter totals.
 - Statuses are `pending`, `confirmed`, `preparing`, `ready`, `fulfilled`, and `cancelled`. Purchasing demand counts every status except `cancelled`; the dashboard displays this rule.
 - Demand totals are customer-requested stems and included/paid-extra note cards. They are not stock-on-hand and do not represent received inventory.
-- The email sender is not active until `RESEND_API_KEY` and `ORDER_EMAIL_FROM` are set to real values for a verified domain.
+- Customer confirmation emails use Gmail SMTP. Set `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and optionally `GMAIL_SENDER_EMAIL` as Edge Function secrets; never commit an app password or expose it in a `VITE_` variable.
