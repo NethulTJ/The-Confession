@@ -8,7 +8,7 @@ Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANO
 
 ### 2. Apply the database migration
 
-Apply `supabase/migrations/20261026100719_order_workflow.sql` to the project's database, either through the Supabase SQL editor or with the Supabase CLI (`supabase login`, then `supabase db push`). The checked-in Supabase config targets this project's ref. The migration upgrades the former `orders` table, preserves existing records and backfills their available JSON item and note snapshots, creates normalized `order_items` and `order_notes`, enables RLS, and removes anonymous order-table insertion. New orders are inserted through the `create_flower_order` transaction, which reprices from server-side catalog prices, allocates a per-day `SC-YYYYMMDD-NNN` number under a row lock, and saves the order, item snapshots, and notes atomically.
+Apply all pending files in `supabase/migrations` to the project's database, in timestamp order, either through the Supabase SQL editor or with the Supabase CLI (`supabase login`, then `supabase db push`). The checked-in Supabase config targets this project's ref. The migration upgrades the former `orders` table, preserves existing records and backfills their available JSON item and note snapshots, creates normalized `order_items` and `order_notes`, enables RLS, and removes anonymous order-table insertion. New orders are inserted through the `create_flower_order` transaction, which reprices from server-side catalog prices, allocates a per-day `SC-YYYYMMDD-NNN` number under a row lock, and saves the order, item snapshots, notes, and recipient contacts atomically.
 
 ### 3. Deploy the Edge Function
 
@@ -36,7 +36,7 @@ Use `npm install` and `npm run dev`, then visit `/` for the shop or `/admin` for
 ## Order and purchasing behavior
 
 - Order numbers use the Colombo calendar date and a transaction-safe daily counter. The private UUID remains the internal order ID.
-- Flower name, selected stem colors, stem quantity, wrap, price snapshot, order notes, and customer/delivery details are saved with each order. Catalog prices are recomputed by the database transaction so browser-submitted prices cannot alter totals.
+- Flower name, selected stem colors, stem quantity, wrap, price snapshot, order notes, purchaser contact details, and the intended recipient’s name and phone are saved with each order. Checkout does not collect street addresses because delivery is arranged for the scheduled day at the fixed delivery point. Catalog prices are recomputed by the database transaction so browser-submitted prices cannot alter totals.
 - Statuses are `pending`, `confirmed`, `preparing`, `ready`, `fulfilled`, and `cancelled`. Purchasing demand counts every status except `cancelled`; the dashboard displays this rule.
 - Demand totals are customer-requested stems and included/paid-extra note cards. They are not stock-on-hand and do not represent received inventory.
 - The email sender is not active until `RESEND_API_KEY` and `ORDER_EMAIL_FROM` are set to real values for a verified domain.

@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
     const body = await req.json();
     if (body.action === "create") {
       const c = body.customer ?? {};
-      const valid = typeof c.name === "string" && c.name.trim().length > 0 && c.name.length <= 100 && typeof c.email === "string" && emailPattern.test(c.email.trim()) && c.email.length <= 254 && typeof c.phone === "string" && /^[+0-9() -]{7,20}$/.test(c.phone) && typeof c.address === "string" && c.address.trim().length > 0 && c.address.length <= 300 && typeof c.city === "string" && c.city.trim().length > 0 && c.city.length <= 100 && (!c.postal_code || typeof c.postal_code === "string" && c.postal_code.length <= 20) && (!c.instructions || typeof c.instructions === "string" && c.instructions.length <= 500);
+      const recipientName = c.recipient_name ?? c.name;
+      const recipientPhone = c.recipient_phone ?? c.phone;
+      const valid = typeof c.name === "string" && c.name.trim().length > 0 && c.name.length <= 100 && typeof c.email === "string" && emailPattern.test(c.email.trim()) && c.email.length <= 254 && typeof c.phone === "string" && /^[+0-9() -]{7,20}$/.test(c.phone) && typeof recipientName === "string" && recipientName.trim().length > 0 && recipientName.length <= 100 && typeof recipientPhone === "string" && /^[+0-9() -]{7,20}$/.test(recipientPhone);
       if (!valid || !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 20 || !/^[0-9a-f-]{36}$/i.test(body.client_request_id ?? "")) return reply({ error: "Please check your contact, delivery, and order details." }, 400);
       const items = body.items.map((item: any) => ({
         flower_id: item.flower_id,
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
       }));
       const allowedColors: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
       if (items.some((item: any) => !["chrysanthemum", "lilies", "rose"].includes(item.flower_id) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > 4 || item.stemColors.length !== item.stems || item.stemColors.some((x: unknown) => !allowedColors[item.flower_id].includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600))) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
-      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, customer_name: c.name, customer_email: c.email, customer_phone: c.phone, delivery_address: c.address, delivery_city: c.city, delivery_postal_code: c.postal_code ?? "", delivery_instructions: c.instructions ?? "", items } }) });
+      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
       // Email is attempted only after the atomic order transaction returns successfully.

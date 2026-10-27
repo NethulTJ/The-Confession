@@ -18,8 +18,10 @@ create table if not exists public.orders (
   customer_name text not null,
   customer_email text not null,
   customer_phone text not null,
-  delivery_address text not null,
-  delivery_city text not null,
+  recipient_name text not null,
+  recipient_phone text not null,
+  delivery_address text,
+  delivery_city text,
   delivery_postal_code text,
   delivery_instructions text,
   subtotal integer not null check (subtotal >= 0),
@@ -37,6 +39,8 @@ alter table public.orders add column if not exists client_request_id uuid;
 alter table public.orders add column if not exists customer_name text;
 alter table public.orders add column if not exists customer_email text;
 alter table public.orders add column if not exists customer_phone text;
+alter table public.orders add column if not exists recipient_name text;
+alter table public.orders add column if not exists recipient_phone text;
 alter table public.orders add column if not exists delivery_address text;
 alter table public.orders add column if not exists delivery_city text;
 alter table public.orders add column if not exists delivery_postal_code text;
@@ -58,16 +62,18 @@ update public.orders set
   customer_name = coalesce(customer_name, 'Legacy order'),
   customer_email = coalesce(customer_email, 'legacy@invalid.local'),
   customer_phone = coalesce(customer_phone, 'not provided'),
+  recipient_name = coalesce(nullif(trim(recipient_name), ''), customer_name, 'Legacy order'),
+  recipient_phone = coalesce(nullif(trim(recipient_phone), ''), customer_phone, 'not provided'),
   delivery_address = coalesce(delivery_address, 'Not provided'),
   delivery_city = coalesce(delivery_city, 'Not provided')
-where order_number is null or client_request_id is null or customer_name is null;
+where order_number is null or client_request_id is null or customer_name is null or recipient_name is null or recipient_phone is null;
 alter table public.orders alter column order_number set not null;
 alter table public.orders alter column client_request_id set not null;
 alter table public.orders alter column customer_name set not null;
 alter table public.orders alter column customer_email set not null;
 alter table public.orders alter column customer_phone set not null;
-alter table public.orders alter column delivery_address set not null;
-alter table public.orders alter column delivery_city set not null;
+alter table public.orders alter column recipient_name set not null;
+alter table public.orders alter column recipient_phone set not null;
 create unique index if not exists orders_client_request_id_key on public.orders(client_request_id);
 create unique index if not exists orders_order_number_key on public.orders(order_number);
 
@@ -184,6 +190,9 @@ declare
   v_item_sum integer;
   v_notes_sum integer;
 begin
+  if coalesce(nullif(trim(p_order->>'recipient_name'), ''), nullif(trim(p_order->>'customer_name'), '')) is null or length(coalesce(nullif(trim(p_order->>'recipient_name'), ''), trim(p_order->>'customer_name'))) > 100 or coalesce(nullif(p_order->>'recipient_phone',''), p_order->>'customer_phone', '') !~ '^[+0-9() -]{7,20}$' then
+    raise exception 'Recipient name and phone are required';
+  end if;
   if jsonb_typeof(p_order->'items') <> 'array' or jsonb_array_length(p_order->'items') not between 1 and 20 then
     raise exception 'Order must contain between 1 and 20 items';
   end if;
@@ -211,8 +220,8 @@ begin
   insert into public.order_number_counters(order_date,last_number) values(v_date,1)
     on conflict(order_date) do update set last_number=order_number_counters.last_number+1 returning last_number into v_next;
   v_order_number:='SC-'||to_char(v_date,'YYYYMMDD')||'-'||lpad(v_next::text,3,'0');
-  insert into public.orders(id,order_number,client_request_id,customer_name,customer_email,customer_phone,delivery_address,delivery_city,delivery_postal_code,delivery_instructions,subtotal)
-  values(v_id,v_order_number,(p_order->>'client_request_id')::uuid,trim(p_order->>'customer_name'),lower(trim(p_order->>'customer_email')),trim(p_order->>'customer_phone'),trim(p_order->>'delivery_address'),trim(p_order->>'delivery_city'),nullif(trim(p_order->>'delivery_postal_code'),''),nullif(trim(p_order->>'delivery_instructions'),''),v_subtotal);
+  insert into public.orders(id,order_number,client_request_id,customer_name,customer_email,customer_phone,recipient_name,recipient_phone,subtotal)
+  values(v_id,v_order_number,(p_order->>'client_request_id')::uuid,trim(p_order->>'customer_name'),lower(trim(p_order->>'customer_email')),trim(p_order->>'customer_phone'),coalesce(nullif(trim(p_order->>'recipient_name'),''),trim(p_order->>'customer_name')),coalesce(nullif(trim(p_order->>'recipient_phone'),''),trim(p_order->>'customer_phone')),v_subtotal);
   for v_item in select value from jsonb_array_elements(p_order->'items') loop
     v_qty:=(v_item->>'stems')::integer;
     if v_item->>'flower_id'='chrysanthemum' then v_name:='Chrysanthemum'; v_base:=case v_qty when 1 then 400 when 2 then 750 when 3 then 990 when 4 then 1250 end;
