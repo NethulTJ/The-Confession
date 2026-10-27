@@ -25,7 +25,36 @@ async function db(path: string, init: RequestInit = {}) {
   });
 }
 
-async function sendOrderConfirmation(to: string, orderNumber: string, summary: string, subtotal: number) {
+type EmailOrderItem = {
+  id: string;
+  flower_name: string;
+  stem_quantity: number;
+  selected_colors: string[];
+  wrap_name: string;
+  item_subtotal: number;
+  notes: { note_text: string; note_type: "included" | "extra"; price: number }[];
+};
+
+const htmlEscapes: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>\"]/g, char => htmlEscapes[char]);
+const formatLkr = (value: number) => `LKR ${Number(value).toLocaleString("en-LK")}`;
+const encodeMime = (value: string) => {
+  const bytes = new TextEncoder().encode(value);
+  const base64 = btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(""));
+  return base64.match(/.{1,76}/g)?.join("\r\n") ?? "";
+};
+
+async function getOrderEmailItems(orderId: string): Promise<EmailOrderItem[]> {
+  const [itemsResponse, notesResponse] = await Promise.all([
+    db(`order_items?select=id,flower_name,stem_quantity,selected_colors,wrap_name,item_subtotal&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
+    db(`order_notes?select=order_item_id,note_text,note_type,price&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
+  ]);
+  if (!itemsResponse.ok || !notesResponse.ok) throw new Error("Could not load the saved order details for email");
+  const [items, notes] = await Promise.all([itemsResponse.json(), notesResponse.json()]);
+  return items.map((item: any) => ({ ...item, notes: notes.filter((note: any) => note.order_item_id === item.id) }));
+}
+
+async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number) {
   const username = Deno.env.get("GMAIL_USER");
   const appPassword = Deno.env.get("GMAIL_APP_PASSWORD")?.replace(/\s/g, "");
   const sender = Deno.env.get("GMAIL_SENDER_EMAIL") ?? username;
@@ -33,8 +62,38 @@ async function sendOrderConfirmation(to: string, orderNumber: string, summary: s
   if (!emailPattern.test(username) || !emailPattern.test(sender) || !emailPattern.test(to)) throw new Error("Invalid email configuration");
 
   const subject = `Your Secret order ${orderNumber}`;
-  const message = `Thank you for choosing Secret Flower Studio.\n\nOrder ${orderNumber}\n${summary}\nSubtotal: LKR ${subtotal.toLocaleString("en-LK")}\n\nWe’ll be in touch to arrange delivery.`;
-  const encodedBody = btoa(Array.from(new TextEncoder().encode(message), byte => String.fromCharCode(byte)).join(""));
+  const safeCustomer = customerName.trim() || "there";
+  const textItems = items.map((item, index) => {
+    const notes = item.notes.map(note => `${note.note_type === "extra" ? `Extra note (${formatLkr(note.price)})` : "Included note"}: “${note.note_text}”`).join("\n    ");
+    return `${index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
+  }).join("\n\n");
+  const message = [
+    "SECRET FLOWER STUDIO · ORDER CONFIRMATION",
+    "",
+    `Thank you, ${safeCustomer}. Your order is saved and being prepared with care.`,
+    `Order number: ${orderNumber}`,
+    `Prepared for: ${recipientName}`,
+    "",
+    "YOUR ORDER",
+    textItems,
+    "",
+    `Order subtotal: ${formatLkr(subtotal)}`,
+    "",
+    "Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.",
+    "",
+    "With care,",
+    "Secret Flower Studio",
+  ].join("\n");
+  const itemHtml = items.map((item, index) => {
+    const notesHtml = item.notes.length
+      ? `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #eee7df">${item.notes.map(note => `<p style="margin:5px 0;color:#69565a;font-size:13px"><strong style="color:#8a5961">${note.note_type === "extra" ? `PAID EXTRA NOTE · ${formatLkr(note.price)}` : "INCLUDED NOTE"}</strong><br>“${escapeHtml(note.note_text)}”</p>`).join("")}</div>`
+      : "";
+    return `<tr><td style="padding:18px 0;border-bottom:1px solid #eee7df"><div style="font-family:Georgia,serif;font-size:18px;color:#462f34">${index + 1}. ${escapeHtml(item.flower_name)} <span style="font-family:Arial,sans-serif;font-size:13px;color:#806d6c">· ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}</span></div><div style="margin-top:8px;color:#756567;font-size:13px;line-height:1.7">Colors: ${escapeHtml(item.selected_colors.join(", ") || "As selected")}<br>Wrap: ${escapeHtml(item.wrap_name)}</div>${notesHtml}<div style="margin-top:12px;text-align:right;font-size:13px;color:#593e43">Item total <strong>${formatLkr(item.item_subtotal)}</strong></div></td></tr>`;
+  }).join("");
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:3px">SECRET</div><div style="margin-top:5px;font-size:9px;letter-spacing:3px;color:#e7d1c3">FLOWER STUDIO</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER CONFIRMATION</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">Your order is saved and being prepared with care.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">Secret Flower Studio</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
+  const boundary = `secret_order_${crypto.randomUUID().replaceAll("-", "")}`;
+  const encodedText = encodeMime(message);
+  const encodedHtml = encodeMime(html);
   const conn = await Deno.connectTls({ hostname: "smtp.gmail.com", port: 465 });
   let pending = "";
   const readBuffer = new Uint8Array(1024);
@@ -82,10 +141,19 @@ async function sendOrderConfirmation(to: string, orderNumber: string, summary: s
       `To: <${to}>`,
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
       "",
-      encodedBody,
+      encodedText,
+      `--${boundary}`,
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      encodedHtml,
+      `--${boundary}--`,
       ".",
     ].join("\r\n") + "\r\n";
     const bytes = new TextEncoder().encode(data);
@@ -125,9 +193,9 @@ Deno.serve(async (req) => {
       // Email is attempted only after the atomic order transaction returns successfully.
       const emailConfigured = Boolean(Deno.env.get("GMAIL_USER") && Deno.env.get("GMAIL_APP_PASSWORD"));
       if (!order.existing && emailConfigured) {
-        const summary = items.map((item: any) => `${item.stems} ${item.stems === 1 ? "stem" : "stems"} of ${item.flower_id}`).join(", ");
         try {
-          await sendOrderConfirmation(c.email, order.order_number, summary, Number(order.subtotal));
+          const emailItems = await getOrderEmailItems(order.id);
+          await sendOrderConfirmation(c.email, c.name, recipientName, order.order_number, emailItems, Number(order.subtotal));
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
           order.confirmation_email_status = "sent";
         } catch (error) {
@@ -184,10 +252,9 @@ Deno.serve(async (req) => {
       const r = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=*`); const rows = await r.json(); const order = rows[0];
       if (!order) return reply({ error: "Order not found." }, 404);
       if (!Deno.env.get("GMAIL_USER") || !Deno.env.get("GMAIL_APP_PASSWORD")) return reply({ error: "Confirmation email is not configured." }, 503);
-      const ir = await db(`order_items?select=flower_name,stem_quantity&order_id=eq.${order.id}`); const items = await ir.json();
-      const summary = items.map((x: any) => `${x.stem_quantity} ${x.stem_quantity === 1 ? "stem" : "stems"} of ${x.flower_name}`).join(", ");
       try {
-        await sendOrderConfirmation(order.customer_email, order.order_number, summary, Number(order.subtotal));
+        const emailItems = await getOrderEmailItems(order.id);
+        await sendOrderConfirmation(order.customer_email, order.customer_name, order.recipient_name, order.order_number, emailItems, Number(order.subtotal));
       } catch (error) {
         const detail = error instanceof Error ? error.message.slice(0, 200) : "Unknown Gmail SMTP error";
         console.error("Order confirmation retry failed", detail);
