@@ -50,37 +50,78 @@ const escapePdfText = (value: string) => asciiPdfText(value).replace(/([\\()])/g
 const base64Bytes = (bytes: Uint8Array) => btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(""));
 
 function createInvoicePdf(orderNumber: string, customerName: string, recipientName: string, items: EmailOrderItem[], subtotal: number, createdAt = new Date()) {
-  const headerLines = [
-    { text: "THE CONFESSION", size: 22, color: "0.42 0.15 0.24" },
-    { text: "ORDER INVOICE", size: 11, color: "0.55 0.38 0.39" },
-    { text: `Order number: ${orderNumber}`, size: 12, color: "0.22 0.16 0.18" },
-    { text: `Date: ${createdAt.toLocaleDateString("en-GB", { timeZone: "Asia/Colombo" })}`, size: 10, color: "0.38 0.31 0.31" },
-    { text: `Ordered by: ${customerName}`, size: 10, color: "0.38 0.31 0.31" },
-    { text: `Prepared for: ${recipientName}`, size: 10, color: "0.38 0.31 0.31" },
-    { text: "ITEMS", size: 10, color: "0.55 0.38 0.39" },
-  ];
+  const burgundy = "0.42 0.15 0.24";
+  const rose = "0.70 0.43 0.45";
+  const sage = "0.40 0.49 0.39";
+  const ink = "0.23 0.17 0.18";
+  const muted = "0.48 0.39 0.38";
+  const centerX = 297.5;
+  const centeredText = (text: string, y: number, size: number, color: string, bold = false) => {
+    const safe = asciiPdfText(text);
+    const x = Math.max(68, centerX - safe.length * size * 0.25);
+    return `${color} rg BT /${bold ? "F2" : "F1"} ${size} Tf ${x.toFixed(2)} ${y} Td (${escapePdfText(safe)}) Tj ET`;
+  };
+  const rightText = (text: string, x: number, y: number, size: number, color: string, bold = false) =>
+    `${color} rg BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${y} Td (${escapePdfText(text)}) Tj ET`;
+  const flower = (commands: string[], cx: number, cy: number, scale: number, petalColor: string) => {
+    const circle = (x: number, y: number, r: number, color: string) => {
+      const k = r * 0.55228475;
+      commands.push(`${color} rg ${x + r} ${y} m ${x + r} ${y + k} ${x + k} ${y + r} ${x} ${y + r} c ${x - k} ${y + r} ${x - r} ${y + k} ${x - r} ${y} c ${x - r} ${y - k} ${x - k} ${y - r} ${x} ${y - r} c ${x + k} ${y - r} ${x + r} ${y - k} ${x + r} ${y} c f`);
+    };
+    for (let petal = 0; petal < 8; petal++) {
+      const angle = petal * Math.PI / 4;
+      circle(cx + Math.cos(angle) * scale * 0.47, cy + Math.sin(angle) * scale * 0.47, scale * 0.27, petalColor);
+    }
+    circle(cx, cy, scale * 0.19, "0.88 0.68 0.37");
+  };
   const pages = [];
-  for (let start = 0; start < items.length; start += 10) {
-    const pageItems = items.slice(start, start + 10);
-    const lines = [
-      ...headerLines,
-      ...pageItems.flatMap((item, index) => [
-      { text: `${start + index + 1}. ${item.flower_name} - ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}`, size: 11, color: "0.22 0.16 0.18" },
-      { text: `   Colors: ${item.selected_colors.join(", ") || "As selected"} | Wrap: ${item.wrap_name}`, size: 9, color: "0.38 0.31 0.31" },
-      { text: `   Item total: ${formatLkr(item.item_subtotal)}`, size: 9, color: "0.38 0.31 0.31" },
-      ]),
+  for (let start = 0; start < items.length; start += 8) {
+    const pageItems = items.slice(start, start + 8);
+    const lastPage = start + pageItems.length >= items.length;
+    const commands = [
+      "0.985 0.972 0.947 rg 0 0 595 842 re f",
+      "0.82 0.68 0.57 RG 0.8 w 32 32 531 778 re S",
+      "0.90 0.82 0.72 RG 0.5 w 40 40 515 762 re S",
+      "0.92 0.87 0.80 RG 0.45 w 76 684 m 519 684 l S",
+      "0.92 0.87 0.80 RG 0.45 w 76 564 m 519 564 l S",
     ];
-    if (start + 10 >= items.length) lines.push(
-      { text: `ORDER TOTAL: ${formatLkr(subtotal)}`, size: 14, color: "0.42 0.15 0.24" },
-      { text: "Payment is not collected online. Delivery will be arranged personally.", size: 9, color: "0.48 0.41 0.41" },
-    );
-    let y = 795;
-    const commands = ["0.97 0.95 0.92 rg", "0 0 595 842 re f", "0.85 0.78 0.71 RG", "42 42 511 758 re S"];
-    for (const [index, line] of lines.entries()) {
-      if (index === 1) y -= 27;
-      else if (index === 6 || line.text.startsWith("ORDER TOTAL")) y -= 25;
-      else y -= line.size >= 11 ? 23 : 18;
-      commands.push(`${line.color} rg BT /${line.size >= 11 ? "F2" : "F1"} ${line.size} Tf 58 ${y} Td (${escapePdfText(line.text)}) Tj ET`);
+    for (const y of [748, 662, 586, 516, 432, 348, 264, 180, 96]) {
+      flower(commands, 50, y, 7, rose);
+      flower(commands, 545, y, 7, sage);
+    }
+    flower(commands, 65, 790, 15, rose);
+    flower(commands, 530, 790, 15, sage);
+    flower(commands, 65, 52, 13, sage);
+    flower(commands, 530, 52, 13, rose);
+    commands.push(centeredText("THE CONFESSION", 775, 21, burgundy, true));
+    commands.push(centeredText("FLOWERS, WRAPPED WITH CARE", 756, 7, muted));
+    commands.push(centeredText("ORDER INVOICE", 721, 13, burgundy, true));
+    commands.push(centeredText(orderNumber, 699, 10, ink));
+    commands.push(centeredText(`Date  ${createdAt.toLocaleDateString("en-GB", { timeZone: "Asia/Colombo" })}`, 670, 9, muted));
+    commands.push(centeredText(`Ordered by  ${customerName}`, 649, 9, muted));
+    commands.push(centeredText(`Prepared for  ${recipientName}`, 631, 9, muted));
+    commands.push(centeredText(start === 0 ? "YOUR FLOWERS" : "YOUR FLOWERS - CONTINUED", 592, 10, burgundy, true));
+    commands.push("0.94 0.89 0.82 rg 80 536 435 20 re f");
+    commands.push(rightText("ITEM", 94, 543, 8, muted, true));
+    commands.push(centeredText("DETAILS", 543, 8, muted, true));
+    commands.push(rightText("AMOUNT", 469, 543, 8, muted, true));
+    let y = 514;
+    const rowSpacing = Math.max(48, Math.min(80, 320 / pageItems.length));
+    pageItems.forEach((item, index) => {
+      const row = start + index;
+      commands.push(centeredText(`${row + 1}.  ${item.flower_name}  -  ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}`, y, 10, ink, true));
+      commands.push(centeredText(`Colors: ${item.selected_colors.join(", ") || "As selected"}  |  Wrap: ${item.wrap_name}`, y - 15, 8, muted));
+      commands.push(rightText(formatLkr(item.item_subtotal), 469, y, 9, burgundy, true));
+      commands.push("0.91 0.85 0.78 RG 0.4 w 90 " + (y - 27) + " m 505 " + (y - 27) + " l S");
+      y -= rowSpacing;
+    });
+    if (lastPage) {
+      const totalY = Math.max(118, Math.min(215, y - 24));
+      commands.push("0.94 0.89 0.82 rg 110 " + (totalY - 20) + " 375 44 re f");
+      commands.push(rightText("ORDER TOTAL", 140, totalY - 5, 10, burgundy, true));
+      commands.push(rightText(formatLkr(subtotal), 388, totalY - 5, 11, burgundy, true));
+      commands.push(centeredText("Payment to be arranged personally", totalY - 43, 8, muted));
+      commands.push(centeredText("Thank you for choosing flowers to say what matters.", 68, 8, sage));
     }
     pages.push(commands.join("\n"));
   }
@@ -125,7 +166,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
   const safeCustomer = customerName.trim() || "there";
   const textItems = items.map((item, index) => {
     const notes = item.notes.map(note => `${note.note_type === "extra" ? `Extra note (${formatLkr(note.price)})` : "Included note"}: “${note.note_text}”`).join("\n    ");
-    return `${start + index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
+    return `${index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
   }).join("\n\n");
   const message = [
     `${senderDisplayName} · Order confirmation`,
