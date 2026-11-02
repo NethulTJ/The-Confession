@@ -5,6 +5,7 @@ const corsHeaders = {
 };
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
 const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
+const bouquetPrices: Record<string, number> = { "bouquet-golden-hour": 3000, "bouquet-blushing-snow": 5500, "bouquet-sunset-glow": 4500, "bouquet-honey-blush": 3500, "bouquet-lavender-kiss": 2500, "bouquet-pink-whisper": 2000, "bouquet-summer-kiss": 2000, "bouquet-berry-bloom": 2000, "bouquet-ivory-dream": 2300, "bouquet-coral-charm": 2000, "bouquet-spring-glow": 2100, "rose-red-stem": 450, "rose-white-stem": 450 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const senderDisplayName = "The Confession by the Leo Club of IIT";
@@ -163,16 +164,16 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
   if (!username || !appPassword || !sender) throw new Error("Gmail is not configured");
   if (!emailPattern.test(username) || !emailPattern.test(sender) || !emailPattern.test(to)) throw new Error("Invalid email configuration");
 
-  const subject = `Your order from The Confession · ${orderNumber}`;
+  const subject = `We received your order · ${orderNumber}`;
   const safeCustomer = customerName.trim() || "there";
   const textItems = items.map((item, index) => {
     const notes = item.notes.map(note => `${note.note_type === "extra" ? `Extra note (${formatLkr(note.price)})` : "Included note"}: “${note.note_text}”`).join("\n    ");
     return `${index + 1}. ${item.flower_name} · ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}\n    Colors: ${item.selected_colors.join(", ") || "As selected"}\n    Wrap: ${item.wrap_name}\n${notes ? `    ${notes}\n` : ""}    Item total: ${formatLkr(item.item_subtotal)}`;
   }).join("\n\n");
   const message = [
-    `${senderDisplayName} · Order confirmation`,
+    `${senderDisplayName} · Order received`,
     "",
-    `Thank you, ${safeCustomer}. Your order is saved and being prepared with care.`,
+    `Thank you, ${safeCustomer}. We received your order and transfer slip. The studio will verify payment before confirming your order.`,
     `Order number: ${orderNumber}`,
     `Prepared for: ${recipientName}`,
     "",
@@ -192,7 +193,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
       : "";
     return `<tr><td style="padding:18px 0;border-bottom:1px solid #eee7df"><div style="font-family:Georgia,serif;font-size:18px;color:#462f34">${index + 1}. ${escapeHtml(item.flower_name)} <span style="font-family:Arial,sans-serif;font-size:13px;color:#806d6c">· ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}</span></div><div style="margin-top:8px;color:#756567;font-size:13px;line-height:1.7">Colors: ${escapeHtml(item.selected_colors.join(", ") || "As selected")}<br>Wrap: ${escapeHtml(item.wrap_name)}</div>${notesHtml}<div style="margin-top:12px;text-align:right;font-size:13px;color:#593e43">Item total <strong>${formatLkr(item.item_subtotal)}</strong></div></td></tr>`;
   }).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:1px">The Confession</div><div style="margin-top:7px;font-size:10px;letter-spacing:1px;color:#e7d1c3">by the Leo Club of IIT</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER CONFIRMATION</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">Your order is saved and being prepared with care.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">${escapeHtml(senderDisplayName)}</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:1px">The Confession</div><div style="margin-top:7px;font-size:10px;letter-spacing:1px;color:#e7d1c3">by the Leo Club of IIT</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER RECEIVED · PAYMENT REVIEW</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">We received your order and transfer slip. The studio will verify payment before confirming your order.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">${escapeHtml(senderDisplayName)}</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
   const boundary = `secret_order_${crypto.randomUUID().replaceAll("-", "")}`;
   const encodedText = encodeMime(message);
   const encodedHtml = encodeMime(html);
@@ -290,6 +291,9 @@ Deno.serve(async (req) => {
       const recipientPhone = c.recipient_phone ?? c.phone;
       const valid = typeof c.name === "string" && c.name.trim().length > 0 && c.name.length <= 100 && typeof c.email === "string" && emailPattern.test(c.email.trim()) && c.email.length <= 254 && typeof c.phone === "string" && /^[+0-9() -]{7,20}$/.test(c.phone) && typeof recipientName === "string" && recipientName.trim().length > 0 && recipientName.length <= 100 && typeof recipientPhone === "string" && /^[+0-9() -]{7,20}$/.test(recipientPhone);
       if (!valid || !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 20 || !/^[0-9a-f-]{36}$/i.test(body.client_request_id ?? "")) return reply({ error: "Please check your contact, delivery, and order details." }, 400);
+      const slip = body.payment_slip;
+      const allowedSlipTypes: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "application/pdf": "pdf" };
+      if (!slip || !allowedSlipTypes[slip.type] || typeof slip.base64 !== "string" || slip.base64.length > 7_000_000) return reply({ error: "Please attach your transfer slip as a JPG, PNG, or PDF (up to 5 MB)." }, 400);
       const items = body.items.map((item: any) => ({
         flower_id: item.flower_id,
         stems: Number(item.stems),
@@ -298,10 +302,25 @@ Deno.serve(async (req) => {
         messages: Array.isArray(item.messages) ? item.messages : [],
         extraNoteCount: Number(item.extraNoteCount ?? 0),
       }));
-      if (items.some((item: any) => !["chrysanthemum", "lilies", "rose"].includes(item.flower_id) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > 4 || item.stemColors.length !== item.stems || item.stemColors.some((x: unknown) => !flowerColorOptions[item.flower_id].includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600))) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
+      if (items.some((item: any) => {
+        const isBouquet = Object.hasOwn(bouquetPrices, item.flower_id);
+        return (!isBouquet && !Object.hasOwn(flowerColorOptions, item.flower_id)) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > (isBouquet ? 1 : 4) || item.stemColors.length !== (isBouquet ? 0 : item.stems) || item.stemColors.some((x: unknown) => !flowerColorOptions[item.flower_id]?.includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || isBouquet && (item.extraNoteCount !== 0 || item.messages.length !== 0) || !isBouquet && item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600);
+      })) return reply({ error: "One of the flower selections or notes is invalid." }, 400);
       const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, terms_accepted: true, terms_accepted_at: new Date().toISOString(), customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
+      let slipBytes: Uint8Array;
+      try { slipBytes = Uint8Array.from(atob(slip.base64), char => char.charCodeAt(0)); }
+      catch { return reply({ error: "The transfer slip could not be read. Please choose it again." }, 400); }
+      if (slipBytes.length < 1 || slipBytes.length > 5 * 1024 * 1024) return reply({ error: "Your transfer slip must be 5 MB or smaller." }, 400);
+      const slipPath = `${order.id}/transfer-slip.${allowedSlipTypes[slip.type]}`;
+      const storageResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/payment-slips/${slipPath}`, { method: "POST", headers: { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`, "Content-Type": slip.type, "x-upsert": "true" }, body: slipBytes });
+      if (!storageResponse.ok) {
+        console.error("Transfer slip upload failed", await storageResponse.text());
+        return reply({ error: "We couldn’t save your transfer slip. Please try again; your bag is still here." }, 502);
+      }
+      const savedSlip = await db(`orders?id=eq.${encodeURIComponent(order.id)}`, { method: "PATCH", body: JSON.stringify({ payment_slip_path: slipPath }) });
+      if (!savedSlip.ok) return reply({ error: "Your transfer slip was uploaded, but could not be linked to the order. Please contact the flower studio." }, 502);
       // Email is attempted only after the atomic order transaction returns successfully.
       const emailConfigured = Boolean(Deno.env.get("GMAIL_USER") && Deno.env.get("GMAIL_APP_PASSWORD"));
       let emailItems: EmailOrderItem[] = [];
@@ -344,10 +363,20 @@ Deno.serve(async (req) => {
           order.items = items.filter((x: any) => x.order_id === order.id).map((item: any) => ({ ...item, notes: notes.filter((n: any) => n.order_item_id === item.id) }));
         }
       } else for (const order of orders) order.items = [];
+      for (const order of orders) {
+        if (!order.payment_slip_path) continue;
+        const signed = await fetch(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/sign/payment-slips/${order.payment_slip_path}`, { method: "POST", headers: { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 300 }) });
+        if (signed.ok) { const data = await signed.json(); order.payment_slip_url = `${Deno.env.get("SUPABASE_URL")}/storage/v1${data.signedURL}`; }
+      }
       return reply({ orders });
     }
     if (body.action === "status") {
       if (typeof body.id !== "string" || !statuses.includes(body.status)) return reply({ error: "Invalid order status." }, 400);
+      if (body.status === "confirmed") {
+        const orderResponse = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=payment_slip_path`);
+        const [order] = await orderResponse.json();
+        if (!orderResponse.ok || !order?.payment_slip_path) return reply({ error: "This order cannot be confirmed until its transfer slip has been uploaded." }, 400);
+      }
       const response = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=id,order_number,status`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ status: body.status, updated_at: new Date().toISOString() }) });
       const rows = await response.json();
       if (!response.ok || !rows.length) return reply({ error: "Order status could not be updated." }, 400);
@@ -366,8 +395,10 @@ Deno.serve(async (req) => {
       const stems = { chrysanthemum: 0, lilies: 0, rose: 0 };
       for (const item of items) {
         const flowerId = item.flower_id as keyof typeof stems;
-        stems[flowerId] += item.stem_quantity;
-        for (const color of item.selected_colors || []) if (colors[flowerId]?.[color] !== undefined) colors[flowerId][color] += 1;
+        if (flowerId in stems) {
+          stems[flowerId] += item.stem_quantity;
+          for (const color of item.selected_colors || []) if (colors[flowerId]?.[color] !== undefined) colors[flowerId][color] += 1;
+        }
       }
       const included = notes.filter((n: any) => n.note_type === "included").length; const extra = notes.filter((n: any) => n.note_type === "extra").length;
       return reply({ demand: { stems, colors, notes: { total: included + extra, included, extra }, included_statuses: statuses.filter(s => s !== "cancelled") } });

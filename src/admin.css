@@ -9,3 +9,5 @@
 @media(max-width:1120px){.status-counts{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:760px){.order-status-panel{padding:15px}.status-order-picker{grid-template-columns:1fr;gap:6px}.status-order-summary{align-items:flex-start;flex-direction:column}.status-current{align-self:flex-start}.status-order-meta{flex-direction:column}}
 @media(max-width:420px){.status-counts{grid-template-columns:repeat(2,minmax(0,1fr))}.status-count{padding:10px}.status-count small{font-size:7px}.status-count strong{font-size:20px}}
+
+.detail-payment{padding:13px 15px;background:#f8f3ed;border:1px solid #eadfd4;margin:-8px 0 22px}.detail-payment p{margin:0;font-size:12px;color:#554347}.detail-payment a{color:#76243a;text-decoration:underline;font-weight:600}.detail-payment small{display:block;margin-top:8px;color:#806d6b;font-size:11px}
