@@ -23,6 +23,12 @@ const bouquets = [
   {id:'bouquet-berry-bloom',name:'Berry bloom',price:2000,image:'/products/new/new-product-08.jpeg'},
   {id:'bouquet-coral-charm',name:'Coral charm',price:2000,image:'/products/new/new-product-10.jpeg'},
   {id:'bouquet-spring-glow',name:'Spring glow',price:2100,image:'/products/new/new-product-11.jpeg'},
+    {id:'bouquet-sweet-peony',name:'Sweet Peony',price:6000,image:'/products/new/new-product-14.jpg'},
+    {id:'bouquet-rose-dreams',name:'Rosè Dreams',price:3200,image:'/products/new/new-product-15.png'},
+    {id:'bouquet-pastel-harmony',name:'Pastel Harmony',price:3600,image:'/products/new/new-product-16.png'},
+    {id:'bouquet-pure-elegance',name:'Pure Elegance',price:2500,image:'/products/new/new-product-17.png'},
+    {id:'bouquet-red-velvet',name:'Red Velvet',price:6000,image:'/products/new/new-product-18.png'},
+    {id:'bouquet-springtime-glow',name:'Springtime Glow',price:3000,image:'/products/new/new-product-19.jpg'},
 ];
 const flowerPhotos = {
   chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums'],['/flowers/chrysanthemum-yellow.png','Yellow chrysanthemums']],
