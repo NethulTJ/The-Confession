@@ -373,6 +373,7 @@ Deno.serve(async (req) => {
     if (body.action === "status") {
       if (typeof body.id !== "string" || !statuses.includes(body.status)) return reply({ error: "Invalid order status." }, 400);
       if (body.status === "confirmed") {
+        if (body.payment_verified !== true) return reply({ error: "An admin must review the payment receipt before confirming this order." }, 400);
         const orderResponse = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=payment_slip_path`);
         const [order] = await orderResponse.json();
         if (!orderResponse.ok || !order?.payment_slip_path) return reply({ error: "This order cannot be confirmed until its transfer slip has been uploaded." }, 400);
