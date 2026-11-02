@@ -148,3 +148,41 @@ button,a{touch-action:manipulation;}
 .custom-order-section,.bouquet-section{margin-top:42px}.custom-order-section .product-list,.bouquet-section .product-list{row-gap:24px}.bouquet-add{margin-top:8px;padding:7px 0;border:0;border-bottom:1px solid #b98a82;background:transparent;color:#773a43;font-size:9px;letter-spacing:.04em;display:flex;align-items:center;gap:5px}.bouquet-add:hover{color:#361b20}.custom-order-section .product-image,.bouquet-section .product-image{width:100%}
 .bouquet-section .product-image{border:0;padding:0}
 @media(max-width:760px){.nav a{font-size:11px}.checkout-form label>span{font-size:10px}}
+
+/* Shop page: keep nested desktop grids from imposing a wide minimum on phones. */
+@media(max-width:760px){
+  #flowers{width:100%;min-width:0;overflow-x:clip;}
+  #flowers>.section-head,#flowers>.shop-grid,#flowers>.bouquet-section{width:100%;min-width:0;}
+  #flowers>.shop-grid{display:flex;flex-direction:column;align-items:stretch;gap:24px;}
+  #flowers>.shop-grid>div,#flowers>.shop-grid>.customizer{width:100%;min-width:0;max-width:100%;}
+  #flowers .product-list{display:grid;width:100%;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 11px;}
+  #flowers .product-card{width:100%;min-width:0;}
+  #flowers .product-info{min-width:0;}
+  #flowers .product-info strong,#flowers .product-info small{overflow-wrap:anywhere;}
+  #flowers .flower-gallery{width:100%;min-width:0;overflow:hidden;}
+  #flowers .gallery-photos{width:100%;max-width:100%;}
+  #flowers>.bouquet-section{margin-top:34px;}
+  #flowers>.bouquet-section .product-list{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #flowers .customizer,#flowers .custom-content,#flowers .add-row{min-width:0;}
+  #flowers .add-row{width:100%;gap:8px;}
+  #flowers .add-row>div{flex:0 0 auto;}
+  #flowers .add-button{flex:1 1 0;min-width:0;max-width:100%;padding-inline:7px;gap:5px;white-space:normal;font-size:9px;}
+  #flowers .custom-foot{align-items:flex-start;}
+}
+@media(max-width:360px){
+  #flowers{padding-inline:13px;}
+  #flowers .product-list{gap:15px 9px;}
+  #flowers .custom-content{padding:13px;}
+  #flowers .stem-choices button{padding-inline:5px;}
+  #flowers .stem-choices button>b{font-size:8px;}
+  #flowers .add-row>div strong{font-size:18px;}
+  #flowers .add-button{font-size:8px;}
+}
+@media(max-width:760px){
+  .cart-drawer:has(.checkout-form) .cart-items{flex:0 0 auto;max-height:104px;overflow-y:auto;}
+  .cart-drawer:has(.checkout-form) .cart-bottom{flex:1 1 auto;min-height:0;max-height:none;display:flex;flex-direction:column;overflow-y:auto;}
+  .cart-drawer:has(.checkout-form) .checkout-form{flex:1 0 auto;}
+  .cart-drawer:has(.checkout-form) .checkout{margin-top:auto;}
+  .cart-item .remove{min-height:40px;}
+  .payment-card dt,.payment-card dd,.payment-card small{font-size:10px;line-height:1.45;}
+}
