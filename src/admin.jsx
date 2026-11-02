@@ -8,8 +8,8 @@ const labels={pending:'Pending',confirmed:'Confirmed',preparing:'Preparing',read
 const money=n=>`Rs. ${Number(n||0).toLocaleString('en-LK')}`;
 const isoDate=d=>new Date(d).toISOString();
 const demandFlowers=[
- {key:'chrysanthemum',name:'Chrysanthemum',tone:'pink',colors:[['Pink','#d8879a'],['Purple','#79518e'],['Red','#a83b4a'],['White','#f5ead6'],['Orange','#e58b42']]},
- {key:'lilies',name:'Lilies',tone:'lilac',colors:[['White','#f5ead6'],['Pink','#e5a7b1'],['Orange','#e58b42']]},
+ {key:'chrysanthemum',name:'Chrysanthemum',tone:'pink',colors:[['Pink','#d8879a'],['Purple','#79518e'],['Red','#a83b4a'],['White','#f5ead6'],['Orange','#e58b42'],['Yellow','#e8c64a']]},
+ {key:'lilies',name:'Lily',tone:'lilac',colors:[['White','#f5ead6'],['Orange','#e58b42']]},
  {key:'rose',name:'Rose',tone:'red',colors:[['Red','#a83b4a'],['Pink','#d8879a'],['White','#f5ead6']]},
 ];
 const statusSteps=[

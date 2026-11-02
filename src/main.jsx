@@ -9,8 +9,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const catalog = [
-  { id:'chrysanthemum', name:'Chrysanthemum', subtitle:'A little light for an ordinary day.', image:'/flowers/IMG_3864.jpg', note:'Wrapped by hand · seasonal colours', prices:{1:400,2:750,3:990,4:1250}, color:'pink', colors:[{name:'Pink',value:'#d8879a'},{name:'Purple',value:'#79518e'},{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'}] },
-  { id:'lilies', name:'Lilies', subtitle:'For the words that deserve a little more.', image:'/flowers/IMG_3866.jpg', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Pink',value:'#e5a7b1'},{name:'Orange',value:'#e58b42'}] },
+  { id:'chrysanthemum', name:'Chrysanthemum', subtitle:'A little light for an ordinary day.', image:'/flowers/IMG_3864.jpg', note:'Wrapped by hand · seasonal colours', prices:{1:400,2:750,3:990,4:1250}, color:'pink', colors:[{name:'Pink',value:'#d8879a'},{name:'Purple',value:'#79518e'},{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
+  { id:'lilies', name:'Lily', subtitle:'For the words that deserve a little more.', image:'/flowers/lily-main.png', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'}] },
   { id:'rose', name:'Rose', subtitle:'The classic, when you already know.', image:'/products/new/new-product-12.jpeg', note:'Single stem · wrapped with care', prices:{1:450}, color:'red', colors:[{name:'Red',value:'#a83b4a'},{name:'Pink',value:'#d8879a'},{name:'White',value:'#f5ead6'}] },
 ];
 const bouquets = [
@@ -29,8 +29,8 @@ const customRoseStems = [
   {id:'rose-white-stem',name:'White rose stem',price:450,image:'/products/new/new-product-13.jpeg'},
 ];
 const flowerPhotos = {
-  chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums']],
-  lilies:[['IMG_3866.jpg','White lilies'],['IMG_3867.jpg','Lily buds']],
+  chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums'],['/flowers/chrysanthemum-yellow.png','Yellow chrysanthemums']],
+  lilies:[['/flowers/lily-main.png','Lily'],['IMG_3867.jpg','Lily buds']],
   rose:[['/products/new/new-product-12.jpeg','Red rose'],['/products/new/new-product-13.jpeg','White rose']],
 };
 const roseColorImages = {Red:'/products/new/new-product-12.jpeg',Pink:'/products/new/new-product-12.jpeg',White:'/products/new/new-product-13.jpeg'};

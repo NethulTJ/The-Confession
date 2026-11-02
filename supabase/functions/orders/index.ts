@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
-const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange"], lilies: ["White", "Pink", "Orange"], rose: ["Red", "Pink", "White"] };
+const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange", "Yellow"], lilies: ["White", "Orange"], rose: ["Red", "Pink", "White"] };
 const bouquetPrices: Record<string, number> = { "bouquet-golden-hour": 3000, "bouquet-blushing-snow": 5500, "bouquet-sunset-glow": 4500, "bouquet-honey-blush": 3500, "bouquet-lavender-kiss": 2500, "bouquet-pink-whisper": 2000, "bouquet-summer-kiss": 2000, "bouquet-berry-bloom": 2000, "bouquet-ivory-dream": 2300, "bouquet-coral-charm": 2000, "bouquet-spring-glow": 2100, "rose-red-stem": 450, "rose-white-stem": 450 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -149,12 +149,12 @@ function createInvoicePdf(orderNumber: string, customerName: string, recipientNa
 
 async function getOrderEmailItems(orderId: string): Promise<EmailOrderItem[]> {
   const [itemsResponse, notesResponse] = await Promise.all([
-    db(`order_items?select=id,flower_name,stem_quantity,selected_colors,wrap_name,item_subtotal&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
+    db(`order_items?select=id,flower_id,flower_name,stem_quantity,selected_colors,wrap_name,item_subtotal&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
     db(`order_notes?select=order_item_id,note_text,note_type,price&order_id=eq.${encodeURIComponent(orderId)}&order=created_at.asc`),
   ]);
   if (!itemsResponse.ok || !notesResponse.ok) throw new Error("Could not load the saved order details for email");
   const [items, notes] = await Promise.all([itemsResponse.json(), notesResponse.json()]);
-  return items.map((item: any) => ({ ...item, notes: notes.filter((note: any) => note.order_item_id === item.id) }));
+  return items.map((item: any) => ({ ...item, flower_name: item.flower_id === "lilies" ? "Lily" : item.flower_name, notes: notes.filter((note: any) => note.order_item_id === item.id) }));
 }
 
 async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number, invoicePdf: Uint8Array) {
@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
         const [itemsRes, notesRes] = await Promise.all([db(`order_items?select=*&order_id=in.(${ids.join(",")})`), db(`order_notes?select=*&order_id=in.(${ids.join(",")})`) ]);
         const items = await itemsRes.json(); const notes = await notesRes.json();
         for (const order of orders) {
-          order.items = items.filter((x: any) => x.order_id === order.id).map((item: any) => ({ ...item, notes: notes.filter((n: any) => n.order_item_id === item.id) }));
+          order.items = items.filter((x: any) => x.order_id === order.id).map((item: any) => ({ ...item, flower_name: item.flower_id === "lilies" ? "Lily" : item.flower_name, notes: notes.filter((n: any) => n.order_item_id === item.id) }));
         }
       } else for (const order of orders) order.items = [];
       for (const order of orders) {
