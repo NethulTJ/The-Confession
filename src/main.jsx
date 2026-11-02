@@ -10,7 +10,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const catalog = [
   { id:'chrysanthemum', name:'Chrysanthemum', subtitle:'A little light for an ordinary day.', image:'/flowers/IMG_3864.jpg', note:'Wrapped by hand · seasonal colours', prices:{1:400,2:750,3:990,4:1250}, color:'pink', colors:[{name:'Pink',value:'#d8879a'},{name:'Purple',value:'#79518e'},{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
-  { id:'lilies', name:'Lily', subtitle:'For the words that deserve a little more.', image:'/flowers/lily-white.png', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
+  { id:'lilies', name:'Lily', subtitle:'For the words that deserve a little more.', image:'/flowers/lily-main.png', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
   { id:'rose', name:'Rose', subtitle:'The classic, when you already know.', image:'/products/new/new-product-12.jpeg', note:'Single stem · wrapped with care', prices:{1:450}, color:'red', colors:[{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'}] },
 ];
 const bouquets = [
