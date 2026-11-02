@@ -321,6 +321,28 @@
   white-space: nowrap;
 }
 
+.rose-color-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 18px 31px;
+  padding: 7px;
+  background: #fff9f0;
+  border: 1px solid #c7b39b;
+  color: #53383b;
+  font-size: 9px;
+}
+
+.rose-color-preview img {
+  width: 54px;
+  height: 54px;
+  object-fit: cover;
+}
+
+.rose-color-preview.pink img {
+  filter: brightness(1.5) saturate(.45);
+}
+
 .required-label {
   color: #87364a;
   font-size: 8px;
