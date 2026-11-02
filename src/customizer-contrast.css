@@ -21,6 +21,42 @@
   padding: 22px;
 }
 
+.custom-flower-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 10px 0 18px;
+}
+
+.custom-flower-choices button {
+  min-width: 0;
+  padding: 0 0 7px;
+  overflow: hidden;
+  border: 1px solid #c7b39b;
+  background: #fff9f0;
+  color: #53383b;
+  font-size: 9px;
+  text-align: left;
+}
+
+.custom-flower-choices button.active {
+  border: 1.5px solid #87364a;
+  box-shadow: inset 0 0 0 1px #87364a24;
+}
+
+.custom-flower-choices img {
+  display: block;
+  width: 100%;
+  height: 54px;
+  object-fit: cover;
+}
+
+.custom-flower-choices button span {
+  display: block;
+  padding: 6px 6px 0;
+  white-space: nowrap;
+}
+
 .step-label {
   color: #53383b;
   font-size: 9px;
