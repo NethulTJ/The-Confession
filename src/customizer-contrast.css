@@ -461,12 +461,12 @@
   border-top: 1px solid #ded2c2;
 }
 
-.customizer .flower-gallery {
+.shop-grid > div > .flower-gallery {
   margin-top: 15px;
   padding-top: 12px;
 }
 
-.customizer .gallery-photos {
+.shop-grid > div > .flower-gallery .gallery-photos {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
 }
