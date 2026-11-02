@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
-const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange", "Yellow"], lilies: ["White", "Orange"], rose: ["Red", "Pink", "White"] };
+const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange", "Yellow"], lilies: ["White", "Orange", "Yellow"], rose: ["Red", "White"] };
 const bouquetPrices: Record<string, number> = { "bouquet-golden-hour": 3000, "bouquet-blushing-snow": 5500, "bouquet-sunset-glow": 4500, "bouquet-honey-blush": 3500, "bouquet-lavender-kiss": 2500, "bouquet-pink-whisper": 2000, "bouquet-summer-kiss": 2000, "bouquet-berry-bloom": 2000, "bouquet-ivory-dream": 2300, "bouquet-coral-charm": 2000, "bouquet-spring-glow": 2100, "rose-red-stem": 450, "rose-white-stem": 450 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -10,8 +10,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const catalog = [
   { id:'chrysanthemum', name:'Chrysanthemum', subtitle:'A little light for an ordinary day.', image:'/flowers/IMG_3864.jpg', note:'Wrapped by hand · seasonal colours', prices:{1:400,2:750,3:990,4:1250}, color:'pink', colors:[{name:'Pink',value:'#d8879a'},{name:'Purple',value:'#79518e'},{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
-  { id:'lilies', name:'Lily', subtitle:'For the words that deserve a little more.', image:'/flowers/lily-main.png', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'}] },
-  { id:'rose', name:'Rose', subtitle:'The classic, when you already know.', image:'/products/new/new-product-12.jpeg', note:'Single stem · wrapped with care', prices:{1:450}, color:'red', colors:[{name:'Red',value:'#a83b4a'},{name:'Pink',value:'#d8879a'},{name:'White',value:'#f5ead6'}] },
+  { id:'lilies', name:'Lily', subtitle:'For the words that deserve a little more.', image:'/flowers/lily-white.png', note:'Wrapped by hand · opens beautifully', prices:{1:950,2:1600,3:2200,4:2900}, color:'cream', colors:[{name:'White',value:'#f5ead6'},{name:'Orange',value:'#e58b42'},{name:'Yellow',value:'#e8c64a'}] },
+  { id:'rose', name:'Rose', subtitle:'The classic, when you already know.', image:'/products/new/new-product-12.jpeg', note:'Single stem · wrapped with care', prices:{1:450}, color:'red', colors:[{name:'Red',value:'#a83b4a'},{name:'White',value:'#f5ead6'}] },
 ];
 const bouquets = [
   {id:'bouquet-golden-hour',name:'Golden hour',price:3000,image:'/products/new/new-product-01.jpeg'},
@@ -24,16 +24,12 @@ const bouquets = [
   {id:'bouquet-coral-charm',name:'Coral charm',price:2000,image:'/products/new/new-product-10.jpeg'},
   {id:'bouquet-spring-glow',name:'Spring glow',price:2100,image:'/products/new/new-product-11.jpeg'},
 ];
-const customRoseStems = [
-  {id:'rose-red-stem',name:'Red rose stem',price:450,image:'/products/new/new-product-12.jpeg'},
-  {id:'rose-white-stem',name:'White rose stem',price:450,image:'/products/new/new-product-13.jpeg'},
-];
 const flowerPhotos = {
   chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums'],['/flowers/chrysanthemum-yellow.png','Yellow chrysanthemums']],
-  lilies:[['/flowers/lily-main.png','Lily'],['IMG_3867.jpg','Lily buds']],
+  lilies:[['/flowers/lily-orange.png','Orange Lily'],['/flowers/lily-white.png','White Lily'],['/flowers/lily-yellow.png','Yellow Lily']],
   rose:[['/products/new/new-product-12.jpeg','Red rose'],['/products/new/new-product-13.jpeg','White rose']],
 };
-const roseColorImages = {Red:'/products/new/new-product-12.jpeg',Pink:'/products/new/new-product-12.jpeg',White:'/products/new/new-product-13.jpeg'};
+const roseColorImages = {Red:'/products/new/new-product-12.jpeg',White:'/products/new/new-product-13.jpeg'};
 const paperColors = [{name:'Oat',value:'#e9d9be'},{name:'Blush',value:'#e8b8b4'},{name:'Sage',value:'#8a9b79'},{name:'Blue',value:'#a8c6d2'},{name:'Berry',value:'#711d35'}];
 const money = n => `Rs. ${n.toLocaleString('en-LK')}`;
 const downloadInvoice = order => {
@@ -92,7 +88,7 @@ function App(){
             <button type="button" className="extra-note-button" onClick={()=>setExtraMessages(current=>[...current,''])}><Plus size={14}/> Add an extra note <span>+ Rs. 100</span></button>
             <div className="add-row"><div><small>YOUR TOTAL</small><strong>{money(price)}</strong></div><button className="button button-dark add-button" onClick={add} disabled={extraMessages.some(note=>!note.trim())}>{added?<><Check size={17}/> Added to bag</>:<>Add to bag <Plus size={17}/></>}</button></div><div className="custom-foot"><Flower2 size={15}/><span>Each bunch is wrapped by hand, with a little room to be imperfect.<br/><em>Flower colours may vary slightly due to weather conditions.</em></span></div></div></aside></div>
         
-        {flower==='rose'&&<div className="custom-order-section"><div className="gallery-caption"><span>CUSTOM ORDERS · ROSE</span><small>Single rose stems, made to order</small></div><div className="product-list">{customRoseStems.map((b,i)=><article className="product-card" key={b.id}><button type="button" className="product-image" onClick={()=>setZoomedFlower({src:b.image,title:b.name})} aria-label={`View ${b.name} larger`}><img src={b.image} alt={b.name} loading="lazy" decoding="async"/><span className="product-number">{String(i+1).padStart(2,'0')}</span></button><span className="product-info"><span><strong>{b.name}</strong><small>Custom order · single stem</small></span><b>{money(b.price)}</b></span><button type="button" className="bouquet-add" onClick={()=>addBouquet(b)}>Add to bag <Plus size={13}/></button></article>)}</div></div>}
+        
         <div className="bouquet-section"><div className="gallery-caption"><span>READY-MADE BOUQUETS</span><small>Hand-tied, just as pictured</small></div><div className="product-list">{bouquets.map((b,i)=><article className="product-card" key={b.id}><button type="button" className="product-image" onClick={()=>setZoomedFlower({src:b.image,title:b.name})} aria-label={`View ${b.name} larger`}><img src={b.image} alt={b.name} loading="lazy" decoding="async"/><span className="product-number">{String(i+1).padStart(2,'0')}</span></button><span className="product-info"><span><strong>{b.name}</strong><small>Ready-made · wrapped as pictured</small></span><b>{money(b.price)}</b></span><button type="button" className="bouquet-add" onClick={()=>addBouquet(b)}>Add to bag <Plus size={13}/></button></article>)}</div></div>
         
       </section>}

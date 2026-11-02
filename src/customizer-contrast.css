@@ -339,10 +339,6 @@
   object-fit: cover;
 }
 
-.rose-color-preview.pink img {
-  filter: brightness(1.5) saturate(.45);
-}
-
 .required-label {
   color: #87364a;
   font-size: 8px;
