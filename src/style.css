@@ -24,7 +24,7 @@
 
 .product-image,.gallery-image{cursor:zoom-in}
 .gallery-image{position:relative;display:block;width:100%;padding:0;border:0;background:none;overflow:hidden}
-.zoom-hint{position:absolute;right:6px;bottom:6px;width:24px;height:24px;display:grid;place-items:center;background:#f8f0e5;color:#77293d;font-size:16px;opacity:0;transition:opacity .2s}
+.zoom-hint{position:absolute;right:6px;bottom:6px;width:24px;height:24px;display:grid;place-items:center;background:#f8f0e5;color:#77293d;opacity:0;transition:opacity .2s}
 .gallery-image:hover .zoom-hint,.gallery-image:focus-visible .zoom-hint{opacity:1}
 .flower-lightbox{position:fixed;z-index:30;inset:0;padding:clamp(16px,4vw,48px);padding-top:max(clamp(16px,4vw,48px),env(safe-area-inset-top));padding-bottom:max(clamp(16px,4vw,48px),env(safe-area-inset-bottom));background:#1d1116ed;display:grid;place-items:center;backdrop-filter:blur(4px);animation:lightbox-fade-in .24s ease-out both;overflow:auto;overscroll-behavior:contain}
 .flower-lightbox figure{margin:0;width:min(1100px,100%);height:min(86dvh,900px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;animation:lightbox-image-in .32s cubic-bezier(.2,.8,.2,1) both}
