@@ -74,7 +74,7 @@ function App(){
   const limitWords=(value,limit)=>{const words=value.trim().match(/\S+/g)||[];return words.length>limit?words.slice(0,limit).join(' '):value};
   const add=()=>{if(extraMessages.some(note=>!note.trim()))return;setCart([...cart,{...product,stems,stemColors:stemColors.slice(0,stems),price,wrap:paperColors[wrap].name,messages:[message.trim(),...extraMessages.map(note=>note.trim())].filter(Boolean),extraNoteCount:extraMessages.length,key:Date.now()}]);setAdded(true);setDrawer(true);setTimeout(()=>setAdded(false),1200)};
   const addBouquet=b=>{setCart(current=>[...current,{...b,fixedPrice:true,stems:1,stemColors:[],wrap:'As pictured',messages:[],extraNoteCount:0,key:Date.now()+Math.random()}]);setAdded(true);setDrawer(true);setTimeout(()=>setAdded(false),1200)};
-  const addCandle=(c,variant)=>{setCart(current=>[...current,{...c,id:c.id,name:c.name,image:c.image,price:variant.price,optionLabel:c.optionLabel,optionValue:variant.value,optionChoice:variant.label,fixedPrice:true,candle:true,stems:1,stemColors:[variant.label],wrap:'As pictured',messages:[],extraNoteCount:0,key:Date.now()+Math.random()}]);setAdded(true);setDrawer(true);setTimeout(()=>setAdded(false),1200)};
+  const addCandle=(c,variant)=>{setCart(current=>[...current,{...c,id:c.id,name:c.name,image:c.image,price:variant.price,optionLabel:c.optionLabel,optionValue:variant.value,optionChoice:variant.label,fixedPrice:true,candle:true,stems:1,stemColors:[variant.value],wrap:'As pictured',messages:[],extraNoteCount:0,key:Date.now()+Math.random()}]);setAdded(true);setDrawer(true);setTimeout(()=>setAdded(false),1200)};
   const submitOrder=event=>{
     event.preventDefault();
     setTermsAccepted(false);
