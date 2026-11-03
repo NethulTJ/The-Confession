@@ -4,6 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const statuses = ["pending", "confirmed", "preparing", "ready", "fulfilled", "cancelled"];
+const deliveryTimeSlots = ["8.30", "1.00", "5.00"];
 const flowerColorOptions: Record<string, string[]> = { chrysanthemum: ["Pink", "Purple", "Red", "White", "Orange", "Yellow"], lilies: ["White", "Orange", "Yellow"], rose: ["Red", "White"] };
 const candlePrices: Record<string, Record<string, number>> = {
   "wax-sachets": { Cinnamon: 450, Lavender: 450, Vanilla: 450, Coffee: 450, Floral: 450 },
@@ -62,7 +63,7 @@ const asciiPdfText = (value: unknown) => String(value ?? "").normalize("NFKD").r
 const escapePdfText = (value: string) => asciiPdfText(value).replace(/([\\()])/g, "\\$1");
 const base64Bytes = (bytes: Uint8Array) => btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(""));
 
-function createInvoicePdf(orderNumber: string, customerName: string, recipientName: string, items: EmailOrderItem[], subtotal: number, createdAt = new Date()) {
+function createInvoicePdf(orderNumber: string, customerName: string, recipientName: string, items: EmailOrderItem[], subtotal: number, deliveryTimeSlot: string, createdAt = new Date()) {
   const burgundy = "0.42 0.15 0.24";
   const rose = "0.70 0.43 0.45";
   const sage = "0.40 0.49 0.39";
@@ -113,6 +114,7 @@ function createInvoicePdf(orderNumber: string, customerName: string, recipientNa
     commands.push(centeredText(`Date  ${createdAt.toLocaleDateString("en-GB", { timeZone: "Asia/Colombo" })}`, 670, 9, muted));
     commands.push(centeredText(`Ordered by  ${customerName}`, 649, 9, muted));
     commands.push(centeredText(`Prepared for  ${recipientName}`, 631, 9, muted));
+    commands.push(centeredText(`Delivery time slot  ${deliveryTimeSlot}`, 613, 9, muted));
     commands.push(centeredText(start === 0 ? "YOUR FLOWERS" : "YOUR FLOWERS - CONTINUED", 592, 10, burgundy, true));
     commands.push("0.94 0.89 0.82 rg 80 536 435 20 re f");
     commands.push(rightText("ITEM", 94, 543, 8, muted, true));
@@ -168,7 +170,7 @@ async function getOrderEmailItems(orderId: string): Promise<EmailOrderItem[]> {
   return items.map((item: any) => ({ ...item, flower_name: item.flower_id === "lilies" ? "Lily" : item.flower_name, notes: notes.filter((note: any) => note.order_item_id === item.id) }));
 }
 
-async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number, invoicePdf: Uint8Array) {
+async function sendOrderConfirmation(to: string, customerName: string, recipientName: string, orderNumber: string, items: EmailOrderItem[], subtotal: number, deliveryTimeSlot: string, invoicePdf: Uint8Array) {
   const username = Deno.env.get("GMAIL_USER");
   const appPassword = Deno.env.get("GMAIL_APP_PASSWORD")?.replace(/\s/g, "");
   const sender = Deno.env.get("GMAIL_SENDER_EMAIL") ?? username;
@@ -187,13 +189,14 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
     `Thank you, ${safeCustomer}. We received your order and transfer slip. The studio will verify payment before confirming your order.`,
     `Order number: ${orderNumber}`,
     `Prepared for: ${recipientName}`,
+    `Delivery time slot: ${deliveryTimeSlot}`,
     "",
     "YOUR ORDER",
     textItems,
     "",
     `Order subtotal: ${formatLkr(subtotal)}`,
     "",
-    "Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.",
+    `Delivery time slot: ${deliveryTimeSlot}. We’ll coordinate the handover around this slot; please ensure it is accurate for the recipient.`,
     "",
     "With care,",
     senderDisplayName,
@@ -204,7 +207,7 @@ async function sendOrderConfirmation(to: string, customerName: string, recipient
       : "";
     return `<tr><td style="padding:18px 0;border-bottom:1px solid #eee7df"><div style="font-family:Georgia,serif;font-size:18px;color:#462f34">${index + 1}. ${escapeHtml(item.flower_name)} <span style="font-family:Arial,sans-serif;font-size:13px;color:#806d6c">· ${item.stem_quantity} ${item.stem_quantity === 1 ? "stem" : "stems"}</span></div><div style="margin-top:8px;color:#756567;font-size:13px;line-height:1.7">${Object.hasOwn(candlePrices, item.flower_id) ? "Selection" : "Colors"}: ${escapeHtml(item.selected_colors.join(", ") || "As selected")}<br>Wrap: ${escapeHtml(item.wrap_name)}</div>${notesHtml}<div style="margin-top:12px;text-align:right;font-size:13px;color:#593e43">Item total <strong>${formatLkr(item.item_subtotal)}</strong></div></td></tr>`;
   }).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:1px">Time to Confess</div><div style="margin-top:7px;font-size:10px;letter-spacing:1px;color:#e7d1c3">by the Leo Club of IIT</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER RECEIVED · PAYMENT REVIEW</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">We received your order and transfer slip. The studio will verify payment before confirming your order.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">${escapeHtml(senderDisplayName)}</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f1eb;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#49383b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fffdfa;border:1px solid #e9e0d6"><tr><td style="padding:34px 38px 26px;text-align:center;background:#542d38;color:#fff8ef"><div style="font-family:Georgia,serif;font-size:22px;letter-spacing:1px">Time to Confess</div><div style="margin-top:7px;font-size:10px;letter-spacing:1px;color:#e7d1c3">by the Leo Club of IIT</div></td></tr><tr><td style="padding:34px 38px 12px"><p style="margin:0 0 10px;color:#a2696a;font-size:10px;font-weight:bold;letter-spacing:2px">ORDER RECEIVED · PAYMENT REVIEW</p><h1 style="margin:0;font-family:Georgia,serif;font-size:30px;font-weight:normal;line-height:1.25;color:#462f34">Thank you, ${escapeHtml(safeCustomer)}.</h1><p style="margin:12px 0 0;color:#756567;font-size:14px;line-height:1.7">We received your order and transfer slip. The studio will verify payment before confirming your order.</p></td></tr><tr><td style="padding:18px 38px 22px"><div style="padding:15px 18px;background:#f7f1eb;border-left:3px solid #a76b70"><div style="font-size:9px;letter-spacing:1.5px;color:#967c75">ORDER NUMBER</div><div style="margin-top:5px;font-family:Georgia,serif;font-size:20px;color:#6d293f">${escapeHtml(orderNumber)}</div><div style="margin-top:9px;font-size:12px;color:#756567">Prepared for <strong style="color:#49383b">${escapeHtml(recipientName)}</strong></div><div style="margin-top:5px;font-size:12px;color:#756567">Delivery time slot <strong style="color:#49383b">${escapeHtml(deliveryTimeSlot)}</strong></div></div></td></tr><tr><td style="padding:0 38px"><h2 style="margin:8px 0 0;font-family:Georgia,serif;font-size:20px;font-weight:normal;color:#462f34">Your order</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemHtml}<tr><td style="padding:18px 0 8px;text-align:right;color:#49383b;font-size:14px">Order subtotal <strong style="margin-left:12px;font-size:18px;color:#6d293f">${formatLkr(subtotal)}</strong></td></tr></table></td></tr><tr><td style="padding:24px 38px 34px"><div style="padding:18px 20px;background:#f7f1eb"><div style="font-family:Georgia,serif;font-size:17px;color:#513a3e">Delivery arrangements</div><p style="margin:8px 0 0;color:#756567;font-size:13px;line-height:1.7">Delivery is arranged personally for our scheduled day at the fixed delivery point. We’ll be in touch to coordinate the details.</p></div><p style="margin:24px 0 0;color:#756567;font-size:13px;line-height:1.7">With care,<br><strong style="color:#6d293f">${escapeHtml(senderDisplayName)}</strong></p></td></tr><tr><td style="padding:17px;text-align:center;background:#542d38;color:#e7d1c3;font-size:10px;letter-spacing:1px">MADE WITH CARE · COLOMBO</td></tr></table></body></html>`;
   const boundary = `secret_order_${crypto.randomUUID().replaceAll("-", "")}`;
   const encodedText = encodeMime(message);
   const encodedHtml = encodeMime(html);
@@ -301,7 +304,7 @@ Deno.serve(async (req) => {
       const recipientName = c.recipient_name ?? c.name;
       const recipientPhone = c.recipient_phone ?? c.phone;
       const valid = typeof c.name === "string" && c.name.trim().length > 0 && c.name.length <= 100 && typeof c.email === "string" && emailPattern.test(c.email.trim()) && c.email.length <= 254 && typeof c.phone === "string" && /^[+0-9() -]{7,20}$/.test(c.phone) && typeof recipientName === "string" && recipientName.trim().length > 0 && recipientName.length <= 100 && typeof recipientPhone === "string" && /^[+0-9() -]{7,20}$/.test(recipientPhone);
-      if (!valid || !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 20 || !/^[0-9a-f-]{36}$/i.test(body.client_request_id ?? "")) return reply({ error: "Please check your contact, delivery, and order details." }, 400);
+      if (!valid || !deliveryTimeSlots.includes(body.delivery_time_slot) || !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 20 || !/^[0-9a-f-]{36}$/i.test(body.client_request_id ?? "")) return reply({ error: "Please check your contact, delivery time, and order details." }, 400);
       const slip = body.payment_slip;
       const allowedSlipTypes: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "application/pdf": "pdf" };
       if (!slip || !allowedSlipTypes[slip.type] || typeof slip.base64 !== "string" || slip.base64.length > 7_000_000) return reply({ error: "Please attach your transfer slip as a JPG, PNG, or PDF (up to 5 MB)." }, 400);
@@ -319,7 +322,7 @@ Deno.serve(async (req) => {
         const isFlower = Object.hasOwn(flowerColorOptions, item.flower_id);
         return (!isBouquet && !isFlower && !isCandle) || !Number.isInteger(item.stems) || item.stems < 1 || item.stems > (isFlower ? 4 : 1) || item.stemColors.length !== (isFlower ? item.stems : isCandle ? 1 : 0) || item.stemColors.some((x: unknown) => isCandle ? !Object.hasOwn(candlePrices[item.flower_id], x as string) : isFlower && !flowerColorOptions[item.flower_id]?.includes(x as string)) || !Number.isInteger(item.extraNoteCount) || item.extraNoteCount < 0 || item.extraNoteCount > 10 || (isBouquet || isCandle) && (item.extraNoteCount !== 0 || item.messages.length !== 0) || !isBouquet && !isCandle && item.messages.length !== item.extraNoteCount && item.messages.length !== item.extraNoteCount + 1 || item.messages.some((x: unknown) => typeof x !== "string" || !x.trim() || x.length > 1600);
       })) return reply({ error: "One of the product selections or notes is invalid." }, 400);
-      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, terms_accepted: true, terms_accepted_at: new Date().toISOString(), customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
+      const created = await db("rpc/create_flower_order", { method: "POST", body: JSON.stringify({ p_order: { client_request_id: body.client_request_id, terms_accepted: true, terms_accepted_at: new Date().toISOString(), delivery_time_slot: body.delivery_time_slot, customer_name: c.name, customer_email: c.email, customer_phone: c.phone, recipient_name: recipientName, recipient_phone: recipientPhone, items } }) });
       const order = await created.json();
       if (!created.ok) return reply({ error: "We couldn’t save your order. Please try again." }, 400);
       let slipBytes: Uint8Array;
@@ -340,13 +343,13 @@ Deno.serve(async (req) => {
       let invoicePdf = new Uint8Array();
       try {
         emailItems = await getOrderEmailItems(order.id);
-        invoicePdf = createInvoicePdf(order.order_number, c.name, recipientName, emailItems, Number(order.subtotal));
+        invoicePdf = createInvoicePdf(order.order_number, c.name, recipientName, emailItems, Number(order.subtotal), body.delivery_time_slot);
       } catch (error) {
         console.error("Order invoice generation failed", error instanceof Error ? error.message : "Unknown error");
       }
       if (!order.existing && emailConfigured && invoicePdf.length) {
         try {
-          await sendOrderConfirmation(c.email, c.name, recipientName, order.order_number, emailItems, Number(order.subtotal), invoicePdf);
+          await sendOrderConfirmation(c.email, c.name, recipientName, order.order_number, emailItems, Number(order.subtotal), body.delivery_time_slot, invoicePdf);
           await db(`orders?id=eq.${order.id}`, { method: "PATCH", body: JSON.stringify({ confirmation_email_status: "sent", confirmation_email_error: null }) });
           order.confirmation_email_status = "sent";
         } catch (error) {
@@ -423,8 +426,8 @@ Deno.serve(async (req) => {
       if (!Deno.env.get("GMAIL_USER") || !Deno.env.get("GMAIL_APP_PASSWORD")) return reply({ error: "Confirmation email is not configured." }, 503);
       try {
         const emailItems = await getOrderEmailItems(order.id);
-        const invoicePdf = createInvoicePdf(order.order_number, order.customer_name, order.recipient_name, emailItems, Number(order.subtotal), new Date(order.created_at));
-        await sendOrderConfirmation(order.customer_email, order.customer_name, order.recipient_name, order.order_number, emailItems, Number(order.subtotal), invoicePdf);
+        const invoicePdf = createInvoicePdf(order.order_number, order.customer_name, order.recipient_name, emailItems, Number(order.subtotal), order.delivery_time_slot, new Date(order.created_at));
+        await sendOrderConfirmation(order.customer_email, order.customer_name, order.recipient_name, order.order_number, emailItems, Number(order.subtotal), order.delivery_time_slot, invoicePdf);
       } catch (error) {
         const detail = error instanceof Error ? error.message.slice(0, 200) : "Unknown Gmail SMTP error";
         console.error("Order confirmation retry failed", detail);
