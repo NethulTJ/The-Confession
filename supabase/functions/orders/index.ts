@@ -408,19 +408,24 @@ Deno.serve(async (req) => {
       const orders = await response.json(); if (!response.ok) return reply({ error: "Demand could not be loaded." }, 502);
       const ids = orders.map((o: any) => o.id);
       const colors = Object.fromEntries(Object.entries(flowerColorOptions).map(([flowerId, options]) => [flowerId, Object.fromEntries(options.map(color => [color, 0]))]));
-      if (!ids.length) return reply({ demand: { stems: { chrysanthemum: 0, lilies: 0, rose: 0 }, colors, notes: { total: 0, included: 0, extra: 0 }, included_statuses: statuses.filter(s => s !== "cancelled") } });
+      if (!ids.length) return reply({ demand: { stems: { chrysanthemum: 0, lilies: 0, rose: 0 }, colors, products: {}, notes: { total: 0, included: 0, extra: 0 }, included_statuses: statuses.filter(s => s !== "cancelled") } });
       const [itemsRes, notesRes] = await Promise.all([db(`order_items?select=flower_id,stem_quantity,selected_colors,order_id&order_id=in.(${ids.join(",")})`), db(`order_notes?select=note_type,order_id&order_id=in.(${ids.join(",")})`)]);
       const items = await itemsRes.json(); const notes = await notesRes.json();
       const stems = { chrysanthemum: 0, lilies: 0, rose: 0 };
+      const products: Record<string, { units: number; options: Record<string, number> }> = {};
       for (const item of items) {
         const flowerId = item.flower_id as keyof typeof stems;
         if (flowerId in stems) {
           stems[flowerId] += item.stem_quantity;
           for (const color of item.selected_colors || []) if (colors[flowerId]?.[color] !== undefined) colors[flowerId][color] += 1;
+        } else if (String(item.flower_id).startsWith("bouquet-") || Object.hasOwn(candlePrices, item.flower_id)) {
+          const product = products[item.flower_id] ??= { units: 0, options: {} };
+          product.units += item.stem_quantity;
+          for (const option of item.selected_colors || []) product.options[option] = (product.options[option] ?? 0) + 1;
         }
       }
       const included = notes.filter((n: any) => n.note_type === "included").length; const extra = notes.filter((n: any) => n.note_type === "extra").length;
-      return reply({ demand: { stems, colors, notes: { total: included + extra, included, extra }, included_statuses: statuses.filter(s => s !== "cancelled") } });
+      return reply({ demand: { stems, colors, products, notes: { total: included + extra, included, extra }, included_statuses: statuses.filter(s => s !== "cancelled") } });
     }
     if (body.action === "retry_email") {
       const r = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=*`); const rows = await r.json(); const order = rows[0];
