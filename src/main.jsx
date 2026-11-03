@@ -47,6 +47,7 @@ const candles = [
   {id:'golden-ember',name:'Golden Ember',image:'/products/candles/golden-ember.png',note:'Cinnamon scented',optionLabel:'SIZE',variants:[{value:'100g · Cinnamon',label:'100g · Cinnamon',price:1450}]},
   {id:'little-moments',name:'Little moments',image:'/products/candles/little-moments.png',note:'Vanilla scented · 100g',optionLabel:'COLOUR',variants:[{value:'Purple · Vanilla · 100g',label:'Purple',price:1450},{value:'Blue · Vanilla · 100g',label:'Blue',price:1450},{value:'Yellow · Vanilla · 100g',label:'Yellow',price:1450},{value:'Red · Vanilla · 100g',label:'Red',price:1450}]},
   {id:'golden-hour-candle',name:'Golden hour',image:'/products/candles/golden-hour.png',note:'Floral scented',optionLabel:'SCENT',variants:[{value:'Floral',label:'Floral',price:2000}]},
+  {id:'rose-love',name:'Rose love',image:'/products/candles/rose-love.png',note:'Vanilla scented',optionLabel:'SCENT',variants:[{value:'Vanilla',label:'Vanilla',price:1900}]},
 ];
 const flowerPhotos = {
   chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums'],['/flowers/chrysanthemum-yellow.png','Yellow chrysanthemums']],

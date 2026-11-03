@@ -6,7 +6,7 @@ const url=import.meta.env.VITE_SUPABASE_URL, key=import.meta.env.VITE_SUPABASE_A
 const statuses=['pending','confirmed','preparing','ready','fulfilled','cancelled'];
 const labels={pending:'Pending',confirmed:'Confirmed',preparing:'Preparing',ready:'Ready',fulfilled:'Fulfilled',cancelled:'Cancelled'};
 const money=n=>`Rs. ${Number(n||0).toLocaleString('en-LK')}`;
-const candleIds=new Set(['wax-sachets','watermelon-breeze','coffee-latte','orange-blossom','blue-swirl','floating-candle-pack','blooming-serenity','bubble-candle','bubble-candle-small','graduation-flower','blush-petals','golden-ember','little-moments','golden-hour-candle']);
+const candleIds=new Set(['wax-sachets','watermelon-breeze','coffee-latte','orange-blossom','blue-swirl','floating-candle-pack','blooming-serenity','bubble-candle','bubble-candle-small','graduation-flower','blush-petals','golden-ember','little-moments','golden-hour-candle','rose-love']);
 const isoDate=d=>new Date(d).toISOString();
 const demandFlowers=[
  {key:'chrysanthemum',name:'Chrysanthemum',tone:'pink',colors:[['Pink','#d8879a'],['Purple','#79518e'],['Red','#a83b4a'],['White','#f5ead6'],['Orange','#e58b42'],['Yellow','#e8c64a']]},
@@ -44,6 +44,7 @@ const demandProducts=[
  {key:'golden-ember',name:'Golden Ember',kind:'Candle'},
  {key:'little-moments',name:'Little moments',kind:'Candle'},
  {key:'golden-hour-candle',name:'Golden hour',kind:'Candle'},
+ {key:'rose-love',name:'Rose love',kind:'Candle'},
 ];
 const statusSteps=[
  {status:'pending',title:'Order received',detail:'Your order is in'},

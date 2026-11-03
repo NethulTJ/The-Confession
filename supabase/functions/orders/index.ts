@@ -17,6 +17,7 @@ const candlePrices: Record<string, Record<string, number>> = {
   "blush-petals": { "180g · Vanilla": 2500 }, "golden-ember": { "100g · Cinnamon": 1450 },
   "little-moments": { "Purple · Vanilla · 100g": 1450, "Blue · Vanilla · 100g": 1450, "Yellow · Vanilla · 100g": 1450, "Red · Vanilla · 100g": 1450 },
   "golden-hour-candle": { Floral: 2000 },
+  "rose-love": { Vanilla: 1900 },
 };
 const bouquetPrices: Record<string, number> = { "bouquet-golden-hour": 3000, "bouquet-blushing-snow": 5500, "bouquet-sunset-glow": 4500, "bouquet-honey-blush": 3500, "bouquet-lavender-kiss": 2500, "bouquet-pink-whisper": 2000, "bouquet-summer-kiss": 2000, "bouquet-berry-bloom": 2000, "bouquet-ivory-dream": 2300, "bouquet-coral-charm": 2000, "bouquet-spring-glow": 2100, "bouquet-sweet-peony": 6000, "bouquet-rose-dreams": 3200, "bouquet-pastel-harmony": 3600, "bouquet-pure-elegance": 2500, "bouquet-red-velvet": 6000, "bouquet-springtime-glow": 3000, "bouquet-angels-touch": 6000, "rose-red-stem": 450, "rose-white-stem": 450 };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
