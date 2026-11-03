@@ -29,6 +29,7 @@ const bouquets = [
     {id:'bouquet-pure-elegance',name:'Pure Elegance',price:2500,image:'/products/new/new-product-17.png'},
     {id:'bouquet-red-velvet',name:'Red Velvet',price:6000,image:'/products/new/new-product-18.png'},
     {id:'bouquet-springtime-glow',name:'Springtime Glow',price:3000,image:'/products/new/new-product-19.jpg'},
+  {id:'bouquet-angels-touch',name:"Angel's Touch",price:6000,image:'/products/flowers/angels-touch.png'},
 ];
 // Candles have their own fragrance selector, independent of flower stem options.
 const candles = [
@@ -44,6 +45,8 @@ const candles = [
   {id:'graduation-flower',name:'Graduation flower',image:'/products/candles/graduation-flower.png',note:'3 flowers · Vanilla scented',optionLabel:'SET',variants:[{value:'3 flowers · Vanilla',label:'3 flowers · Vanilla',price:1400}]},
   {id:'blush-petals',name:'Blush Petals',image:'/products/candles/blush-petals.png',note:'Vanilla scented',optionLabel:'SIZE',variants:[{value:'180g · Vanilla',label:'180g · Vanilla',price:2500}]},
   {id:'golden-ember',name:'Golden Ember',image:'/products/candles/golden-ember.png',note:'Cinnamon scented',optionLabel:'SIZE',variants:[{value:'100g · Cinnamon',label:'100g · Cinnamon',price:1450}]},
+  {id:'little-moments',name:'Little moments',image:'/products/candles/little-moments.png',note:'Vanilla scented · 100g',optionLabel:'COLOUR',variants:[{value:'Purple · Vanilla · 100g',label:'Purple',price:1450},{value:'Blue · Vanilla · 100g',label:'Blue',price:1450},{value:'Yellow · Vanilla · 100g',label:'Yellow',price:1450},{value:'Red · Vanilla · 100g',label:'Red',price:1450}]},
+  {id:'golden-hour-candle',name:'Golden hour',image:'/products/candles/golden-hour.png',note:'Floral scented',optionLabel:'SCENT',variants:[{value:'Floral',label:'Floral',price:2000}]},
 ];
 const flowerPhotos = {
   chrysanthemum:[['IMG_3864.jpg','Pink chrysanthemums'],['IMG_3865.jpg','Purple chrysanthemums'],['IMG_3868.jpg','Red chrysanthemums'],['IMG_8716.jpg','White chrysanthemums'],['orange.jpg','Orange chrysanthemums'],['/flowers/chrysanthemum-yellow.png','Yellow chrysanthemums']],
