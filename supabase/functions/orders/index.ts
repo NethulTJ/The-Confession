@@ -402,6 +402,29 @@ Deno.serve(async (req) => {
       if (!response.ok || !rows.length) return reply({ error: "Order status could not be updated." }, 400);
       return reply({ order: rows[0] });
     }
+    if (body.action === "delete") {
+      if (typeof body.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.id)) return reply({ error: "Invalid order." }, 400);
+      const orderResponse = await db(`orders?id=eq.${encodeURIComponent(body.id)}&select=id,payment_slip_path`);
+      const orderRows = await orderResponse.json();
+      if (!orderResponse.ok) return reply({ error: "Order could not be loaded for deletion." }, 502);
+      const order = orderRows[0];
+      if (!order) return reply({ error: "Order not found." }, 404);
+      const deleteResponse = await db(`orders?id=eq.${encodeURIComponent(body.id)}`, { method: "DELETE", headers: { Prefer: "return=representation" } });
+      const deletedRows = await deleteResponse.json();
+      if (!deleteResponse.ok || !deletedRows.length) return reply({ error: "Order could not be deleted." }, 502);
+      if (order.payment_slip_path) {
+        const slipPath = String(order.payment_slip_path).split("/").map(encodeURIComponent).join("/");
+        const slipResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/storage/v1/object/payment-slips/${slipPath}`, {
+          method: "DELETE",
+          headers: { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}` },
+        });
+        if (!slipResponse.ok && slipResponse.status !== 404) {
+          console.error("Deleted order but payment slip cleanup failed", body.id, slipResponse.status);
+          return reply({ ok: true, warning: "The order was deleted, but its uploaded payment slip could not be removed." });
+        }
+      }
+      return reply({ ok: true });
+    }
     if (body.action === "demand") {
       const from = new Date(body.from); const to = new Date(body.to);
       if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from > to) return reply({ error: "Choose a valid date range." }, 400);
