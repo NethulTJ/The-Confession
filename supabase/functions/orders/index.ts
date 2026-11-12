@@ -301,7 +301,25 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply({ error: "Method not allowed" }, 405);
   try {
     const body = await req.json();
+    if (body.action === "shop_status") {
+      const response = await db("shop_settings?id=eq.1&select=accepting_orders");
+      if (!response.ok) return reply({ error: "Shop status could not be loaded." }, 502);
+      const rows = await response.json();
+      return reply({ accepting_orders: rows[0]?.accepting_orders ?? true });
+    }
+    if (body.action === "set_shop_status") {
+      if (!await adminUser(req)) return reply({ error: "Admin access required." }, 401);
+      if (typeof body.accepting_orders !== "boolean") return reply({ error: "Choose whether orders are open or paused." }, 400);
+      const response = await db("shop_settings?id=eq.1", { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ accepting_orders: body.accepting_orders, updated_at: new Date().toISOString() }) });
+      if (!response.ok) return reply({ error: "Shop status could not be saved." }, 502);
+      const rows = await response.json();
+      return reply({ accepting_orders: rows[0]?.accepting_orders ?? body.accepting_orders });
+    }
     if (body.action === "create") {
+      const shopStatus = await db("shop_settings?id=eq.1&select=accepting_orders");
+      if (!shopStatus.ok) return reply({ error: "Shop availability could not be checked. Please try again." }, 502);
+      const shopRows = await shopStatus.json();
+      if (shopRows[0]?.accepting_orders === false) return reply({ error: "We’re not accepting orders right now. Please check back soon." }, 403);
       if (body.terms_accepted !== true) return reply({ error: "Please review and agree to the delivery terms before placing your order." }, 400);
       const c = body.customer ?? {};
       const recipientName = c.recipient_name ?? c.name;
